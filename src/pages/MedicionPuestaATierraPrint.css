@@ -1,0 +1,354 @@
+.print-container {
+    width: 100%;
+}
+
+.print-page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 10mm 20mm 20mm 20mm;
+    /* Reducido margen superior */
+    margin: 0 auto;
+    page-break-after: always;
+    /* Asegura que cada página comience en una nueva página */
+    background: white;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.header-print {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 15px;
+    /* Reducido de 20px */
+}
+
+.logo-print {
+    width: 70px;
+}
+
+.titulo-print {
+    margin: 0;
+    font-size: 24px;
+}
+
+.fecha-print {
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.section-title {
+    margin-top: 12px;
+    /* Reducido de 18px */
+    margin-bottom: 6px;
+    /* Agregado para reducir espacio */
+    font-size: 18px;
+    border-bottom: 1px solid #333;
+}
+
+.section-box {
+    padding: 8px 10px;
+    /* Reducido padding vertical */
+    font-size: 15px;
+    line-height: 1.4;
+    /* Interlineado más ajustado */
+}
+
+.section-box p {
+    text-transform: uppercase;
+}
+
+/* Grid de 2 columnas para campos */
+.section-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 15px;
+}
+
+.section-grid p {
+    margin: 0;
+    padding: 2px 0;
+    /* Reducido de 4px */
+    line-height: 1.3;
+    /* Interlineado más compacto */
+}
+
+/* Clase para elementos que ocupan todo el ancho */
+.section-grid .full-width {
+    grid-column: 1 / -1;
+}
+
+
+.imagenes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
+.img-print {
+    width: 100%;
+    max-height: 230px;
+    object-fit: cover;
+    border: 1px solid #ccc;
+}
+
+.firma-final {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+}
+
+.firma-img {
+    width: 120px;
+    margin-bottom: 10px;
+}
+
+.print-actions {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    padding: 10px;
+    text-align: right;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    z-index: 100;
+}
+
+.btn-imprimir {
+    padding: 8px 16px;
+    background: #0077cc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.btn-imprimir:hover {
+    background: #005fa3;
+}
+
+@media print {
+    .print-actions {
+        display: none !important;
+    }
+
+    .print-page {
+        padding: 5mm 10mm;
+        /* Márgenes aún más reducidos en impresión */
+    }
+}
+
+/* ------------------------------------------- */
+/* CONTENEDOR GENERAL */
+/* ------------------------------------------- */
+.print-container {
+    width: 100%;
+    padding: 15px;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    color: #000;
+}
+
+/* ------------------------------------------- */
+/* BLOQUE DE BOTÓN PARA IMPRIMIR */
+/* No aparece en el PDF */
+/* ------------------------------------------- */
+.no-print {
+    display: block;
+}
+
+.imprimir-barra {
+    padding: 10px 0;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 20px;
+}
+
+.no-print button {
+    padding: 8px 14px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* ------------------------------------------- */
+/* PÁGINAS */
+/* ------------------------------------------- */
+.pagina {
+    page-break-after: always;
+    break-after: page;
+}
+
+.pagina:last-child {
+    page-break-after: auto;
+}
+
+/* ------------------------------------------- */
+/* TITULO + LOGO + FECHA */
+/* ------------------------------------------- */
+.titulo-bloque {
+    text-align: center;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.logo-print {
+    width: 80px;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.titulo-bloque h1 {
+    font-size: 24px;
+    margin: 5px 0;
+}
+
+.fecha-impresion {
+    text-align: right;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.btn-imprimir {
+    margin-top: 8px;
+    padding: 8px 16px;
+    background: #1e88e5;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-imprimir:hover {
+    background: #1565c0;
+}
+
+
+/* ------------------------------------------- */
+/* CARDS */
+/* ------------------------------------------- */
+.card-print {
+    border: 1px solid #888;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+}
+
+.card-print h2 {
+    margin: 0 0 6px 0;
+    font-size: 18px;
+}
+
+/* ------------------------------------------- */
+/* UBICACIÓN */
+/* ------------------------------------------- */
+.ubicacion-print {
+    width: 100%;
+    max-width: 450px;
+    margin-top: 10px;
+}
+
+/* ------------------------------------------- */
+/* IMÁGENES FLEX-WRAP (OPCIÓN C) */
+/* ------------------------------------------- */
+.imagenes-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.imagen-item {
+    width: 30%;
+    min-width: 90px;
+    max-width: 180px;
+    aspect-ratio: 1/1;
+    border: 1px solid #aaa;
+    padding: 3px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.imagen-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ------------------------------------------- */
+/* FIRMA DIGITAL */
+/* ------------------------------------------- */
+.firma-print {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.firma-print img {
+    width: 220px;
+    height: auto;
+}
+
+/* ------------------------------------------- */
+/* IMPRESIÓN */
+/* ------------------------------------------- */
+@media print {
+
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* ------------------------------------------- */
+/* CONFIGURACIÓN DE PÁGINA A4 + FOOTER */
+/* ------------------------------------------- */
+@page {
+    size: A4;
+    margin: 5mm;
+    /* Márgenes mínimos en todos los lados */
+
+    /* FOOTER CENTRADO — ID + Página X de Y */
+    @bottom-center {
+        content: "ID: " attr(data-id) " — Página " counter(page) " de " counter(pages);
+        font-size: 11px;
+    }
+}
+
+/* ------------------------------------------- */
+/* DEFINICIÓN DE COUNTERS */
+/* (esto permite poner el ID en el footer) */
+/* ------------------------------------------- */
+.print-container {
+    counter-reset: idInforme var(--idInforme);
+}
+
+/* Footer de p�gina con ID */
+/* Footer de página con ID */
+.page-footer {
+    display: none;
+    /* Oculto en vista previa */
+    position: absolute;
+    bottom: 5mm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10px;
+    color: #666;
+    padding: 3px 0;
+}
+
+@media print {
+    .page-footer {
+        display: block;
+        /* Visible al imprimir */
+        position: fixed;
+        bottom: 3mm;
+    }
+}
