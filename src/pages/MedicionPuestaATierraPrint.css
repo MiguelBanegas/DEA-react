@@ -4,9 +4,10 @@
 
 .print-page {
     width: 210mm;
-    min-height: 297mm;
-    padding: 10mm 20mm 20mm 20mm;
-    /* Reducido margen superior */
+    min-height: auto;
+    /* Permite que la página se ajuste al contenido */
+    padding: 8mm 15mm 15mm 15mm;
+    /* Márgenes reducidos para aprovechar más espacio */
     margin: 0 auto;
     page-break-after: always;
     /* Asegura que cada página comience en una nueva página */
@@ -17,10 +18,10 @@
 
 .header-print {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     align-items: center;
-    margin-bottom: 15px;
-    /* Reducido de 20px */
+    margin-bottom: 10px;
+    /* Reducido para layout más compacto */
 }
 
 .logo-print {
@@ -37,39 +38,63 @@
     margin-top: 5px;
 }
 
+/* Wrapper para mantener título + contenido juntos */
+.section-wrapper {
+    page-break-inside: avoid;
+    /* Evita dividir la sección completa */
+    break-inside: avoid;
+    /* Sintaxis moderna */
+    display: block;
+}
+
 .section-title {
-    margin-top: 12px;
-    /* Reducido de 18px */
-    margin-bottom: 6px;
-    /* Agregado para reducir espacio */
+    margin-top: 8px;
+    /* Espaciado compacto */
+    margin-bottom: 4px;
+    /* Espaciado compacto */
     font-size: 18px;
     border-bottom: 1px solid #333;
+    page-break-after: avoid;
+    /* Evita salto de página después del título */
+    break-after: avoid;
+    /* Sintaxis moderna */
 }
 
 .section-box {
-    padding: 8px 10px;
-    /* Reducido padding vertical */
+    padding: 6px 8px;
+    /* Padding más compacto */
     font-size: 15px;
-    line-height: 1.4;
+    line-height: 1.3;
     /* Interlineado más ajustado */
+    page-break-inside: avoid;
+    /* Evita dividir el contenido en dos páginas */
+    break-inside: avoid;
+    /* Sintaxis moderna */
 }
 
 .section-box p {
     text-transform: uppercase;
+    white-space: pre-wrap;
+    /* Permite saltos de línea y espacios múltiples */
+    word-wrap: break-word;
+    /* Rompe palabras largas si es necesario */
+    overflow-wrap: break-word;
+    /* Alternativa moderna a word-wrap */
 }
 
 /* Grid de 2 columnas para campos */
 .section-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 15px;
+    gap: 4px 12px;
+    /* Espaciado más compacto */
 }
 
 .section-grid p {
     margin: 0;
-    padding: 2px 0;
-    /* Reducido de 4px */
-    line-height: 1.3;
+    padding: 1px 0;
+    /* Reducido para layout compacto */
+    line-height: 1.25;
     /* Interlineado más compacto */
 }
 
@@ -83,6 +108,10 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 10px;
+    page-break-inside: avoid;
+    /* Mantiene las imágenes juntas */
+    break-inside: avoid;
+    /* Sintaxis moderna */
 }
 
 .img-print {
@@ -137,8 +166,8 @@
     }
 
     .print-page {
-        padding: 5mm 10mm;
-        /* Márgenes aún más reducidos en impresión */
+        padding: 5mm 8mm;
+        /* Márgenes reducidos en impresión para aprovechar más espacio */
     }
 }
 
@@ -309,17 +338,15 @@
 /* ------------------------------------------- */
 /* CONFIGURACIÓN DE PÁGINA A4 + FOOTER */
 /* ------------------------------------------- */
-@page {
+/* @page {
     size: A4;
     margin: 5mm;
-    /* Márgenes mínimos en todos los lados */
 
-    /* FOOTER CENTRADO — ID + Página X de Y */
     @bottom-center {
         content: "ID: " attr(data-id) " — Página " counter(page) " de " counter(pages);
         font-size: 11px;
     }
-}
+} */
 
 /* ------------------------------------------- */
 /* DEFINICIÓN DE COUNTERS */
@@ -329,26 +356,33 @@
     counter-reset: idInforme var(--idInforme);
 }
 
-/* Footer de p�gina con ID */
 /* Footer de página con ID */
 .page-footer {
     display: none;
-    /* Oculto en vista previa */
-    position: absolute;
-    bottom: 5mm;
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-size: 10px;
-    color: #666;
-    padding: 3px 0;
+    /* Oculto en vista normal */
 }
 
 @media print {
     .page-footer {
-        display: block;
-        /* Visible al imprimir */
+        display: block !important;
         position: fixed;
-        bottom: 3mm;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: #000;
+        background-color: white;
+        padding: 8px 0;
+        border-top: 2px solid #333;
+        z-index: 9999;
+        /* Asegura visibilidad en cada página impresa */
+    }
+
+    /* Agrega espacio al final de cada página para el footer */
+    .print-page {
+        padding-bottom: 20mm !important;
     }
 }

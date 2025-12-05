@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://0.0.0.0:3001";
+const API_BASE = import.meta.env.API_URL || "https://dea.mabcontrol.ar";
 
 export async function createPlanillaMultipart(meta, files = []) {
   const fd = new FormData();

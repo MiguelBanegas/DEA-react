@@ -46,7 +46,7 @@ export default function MedicionPuestaATierraPrint() {
   // Componente de footer para cada página
   const PageFooter = ({ pageNum }) => (
     <div className="page-footer">
-      {data.idInformePAT} - Pág. {pageNum} de {totalPaginas}
+      <strong>ID: {data.idInformePAT}</strong> | Página {pageNum} de {totalPaginas}
     </div>
   );
 
@@ -77,59 +77,69 @@ export default function MedicionPuestaATierraPrint() {
         </div>
 
         {/* DATOS DEL CLIENTE */}
-        <h2 className="section-title">Datos del Cliente</h2>
-        <div className="section-box section-grid">
-          <p><strong>Razón Social:</strong> {data.razonSocial}</p>
-          <p><strong>CUIT:</strong> {data.cuit}</p>
-          <p><strong>Dirección:</strong> {data.direccion}</p>
-          <p><strong>Localidad:</strong> {data.localidad}</p>
-          <p><strong>Provincia:</strong> {data.provincia}</p>
-          <p><strong>CP:</strong> {data.cp}</p>
+        <div className="section-wrapper">
+          <h2 className="section-title">Datos del Cliente</h2>
+          <div className="section-box section-grid">
+            <p><strong>Razón Social:</strong> {data.razonSocial}</p>
+            <p><strong>CUIT:</strong> {data.cuit}</p>
+            <p><strong>Dirección:</strong> {data.direccion}</p>
+            <p><strong>Localidad:</strong> {data.localidad}</p>
+            <p><strong>Provincia:</strong> {data.provincia}</p>
+            <p><strong>CP:</strong> {data.cp}</p>
+          </div>
         </div>
 
         {/* DATOS DEL PROFESIONAL */}
-        <h2 className="section-title">Datos del Profesional</h2>
-        <div className="section-box section-grid">
-          <p className="full-width"><strong>Nombre:</strong> {data.nombreProfesional} {data.apellidoProfesional}</p>
-          <p><strong>Matrícula:</strong> {data.matriculaProfesional}</p>
-          <p><strong>Incumbencias:</strong> {data.incumbenciasEspecificas}</p>
-          <p><strong>Pago Matrícula:</strong> {data.pagoMatricula}</p>
-          <p><strong>Seguro Accidentes:</strong> {data.seguroAccidentes}</p>
+        <div className="section-wrapper">
+          <h2 className="section-title">Datos del Profesional</h2>
+          <div className="section-box section-grid">
+            <p className="full-width"><strong>Nombre:</strong> {data.nombreProfesional} {data.apellidoProfesional}</p>
+            <p><strong>Matrícula:</strong> {data.matriculaProfesional}</p>
+            <p><strong>Incumbencias:</strong> {data.incumbenciasEspecificas}</p>
+            <p><strong>Pago Matrícula:</strong> {data.pagoMatricula}</p>
+            <p><strong>Seguro Accidentes:</strong> {data.seguroAccidentes}</p>
+          </div>
         </div>
 
         {/* DATOS DEL INSTRUMENTO */}
-        <h2 className="section-title">Instrumento de Medición</h2>
-        <div className="section-box section-grid">
-          <p><strong>Marca:</strong> {data.marcaInstrumento}</p>
-          <p><strong>Modelo:</strong> {data.modeloInstrumento}</p>
-          <p><strong>Número Serie:</strong> {data.numeroSerieInstrumento}</p>
-          <p><strong>Tipo:</strong> {data.tipoInstrumento}</p>
-          <p><strong>Cert. Fabricante:</strong> {data.certificadoFabricante}</p>
-          <p><strong>Calibración:</strong> {data.certificadoCalibracion}</p>
-          <p><strong>Condiciones de Uso:</strong> {data.condicionesUso}</p>
+        <div className="section-wrapper">
+          <h2 className="section-title">Instrumento de Medición</h2>
+          <div className="section-box section-grid">
+            <p><strong>Marca:</strong> {data.marcaInstrumento}</p>
+            <p><strong>Modelo:</strong> {data.modeloInstrumento}</p>
+            <p><strong>Número Serie:</strong> {data.numeroSerieInstrumento}</p>
+            <p><strong>Tipo:</strong> {data.tipoInstrumento}</p>
+            <p><strong>Cert. Fabricante:</strong> {data.certificadoFabricante}</p>
+            <p><strong>Calibración:</strong> {data.certificadoCalibracion}</p>
+            <p><strong>Condiciones de Uso:</strong> {data.condicionesUso}</p>
+          </div>
         </div>
 
         {/* DATOS DE MEDICIÓN */}
-        <h2 className="section-title">Datos de la Medición</h2>
-        <div className="section-box section-grid">
-          <p><strong>Fecha:</strong> {data.fechaMedicion}</p>
-          <p><strong>Hora Inicio:</strong> {data.horaInicio}</p>
-          <p className="full-width"><strong>Hora Fin:</strong> {data.horaFin}</p>
+        <div className="section-wrapper">
+          <h2 className="section-title">Datos de la Medición</h2>
+          <div className="section-box section-grid">
+            <p><strong>Fecha:</strong> {data.fechaMedicion}</p>
+            <p><strong>Hora Inicio:</strong> {data.horaInicio}</p>
+            <p className="full-width"><strong>Hora Fin:</strong> {data.horaFin}</p>
+          </div>
         </div>
 
         {/* METODOLOGÍA Y OBSERVACIONES */}
-        <h2 className="section-title">Metodología</h2>
-        <div className="section-box">
-          <p>{data.metodologia}</p>
+        <div className="section-wrapper">
+          <h2 className="section-title">Metodología</h2>
+          <div className="section-box">
+            <p>{data.metodologia}</p>
+          </div>
         </div>
 
         {!obsLargas && (
-          <>
+          <div className="section-wrapper">
             <h2 className="section-title">Observaciones</h2>
             <div className="section-box">
               <p>{data.observaciones}</p>
             </div>
-          </>
+          </div>
         )}
         {!obsLargas && gruposImagenes.length === 0 && <FirmaSection />}
         <PageFooter pageNum={1} />
@@ -138,9 +148,11 @@ export default function MedicionPuestaATierraPrint() {
       {/* ====================== PÁGINA 2 (OBSERVACIONES LARGAS) ====================== */}
       {obsLargas && (
         <div className="print-page">
-          <h2 className="section-title">Observaciones</h2>
-          <div className="section-box">
-            <p>{data.observaciones}</p>
+          <div className="section-wrapper">
+            <h2 className="section-title">Observaciones</h2>
+            <div className="section-box">
+              <p>{data.observaciones}</p>
+            </div>
           </div>
           {gruposImagenes.length === 0 && <FirmaSection />}
           <PageFooter pageNum={2} />
@@ -150,11 +162,13 @@ export default function MedicionPuestaATierraPrint() {
       {/* ====================== IMÁGENES (3 POR PÁGINA) ====================== */}
       {gruposImagenes.map((grupo, index) => (
         <div key={index} className="print-page">
-          <h2 className="section-title">Documentación Adjunta</h2>
-          <div className="imagenes-grid">
-            {grupo.map((img, i) => (
-              <img key={i} src={img} alt={`Foto ${i}`} className="img-print" />
-            ))}
+          <div className="section-wrapper">
+            <h2 className="section-title">Documentación Adjunta</h2>
+            <div className="imagenes-grid">
+              {grupo.map((img, i) => (
+                <img key={i} src={img} alt={`Foto ${i}`} className="img-print" />
+              ))}
+            </div>
           </div>
           {index === gruposImagenes.length - 1 && <FirmaSection />}
           <PageFooter pageNum={obsLargas ? 3 : 2 + index} />
