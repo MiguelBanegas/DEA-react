@@ -5,6 +5,8 @@ import html2pdf from "html2pdf.js";
 import imageCompression from "browser-image-compression";
 import Navbar from "../components/Navbar";
 import { usePlanillas } from "../hooks/usePlanillas";
+import toast from 'react-hot-toast';
+import { confirmar } from '../utils/confirmationToast';
 import "./Verificacion.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -128,29 +130,40 @@ const MedicionPuestaATierra = () => {
     const localID = localStorage.getItem("idInformePAT");
 
     // Si había datos guardados localmente, avisamos si desea continuar
-    if (saved && !idInformeFromHistorial) {
-      if (window.confirm("Se encontró un informe en progreso. ¿Desea continuar?")) {
-        try {
-          setFormData(JSON.parse(saved));
-          setIdInforme(localID || null);
-        } catch {}
-      } else {
-        limpiarFormulario();
-      }
-      return;
-    }
-
-    // Si no había nada, colocar fecha por default y generar ID temporal
-    const today = new Date().toISOString().split("T")[0];
-    setFormData((prev) => ({ ...prev, fechaMedicion: today }));
+    const checkSavedSession = async () => {
+        if (saved && !idInformeFromHistorial) {
+            const continuar = await confirmar(
+                "Se encontró un informe en progreso.",
+                "¿Desea recuperar los datos no guardados?"
+            );
+            
+            if (continuar) {
+                try {
+                setFormData(JSON.parse(saved));
+                setIdInforme(localID || null);
+                } catch {}
+            } else {
+                limpiarFormulario();
+            }
+        } else {
+            // Si no había nada (o venimos de historial), inicializar fechas/ID si hace falta
+            if (!idInformeFromHistorial && !saved) {
+                 const today = new Date().toISOString().split("T")[0];
+                 setFormData((prev) => ({ ...prev, fechaMedicion: today }));
+                 
+                 if (!idInforme) {
+                   const nuevoId = generarIdTemporal();
+                   setIdInforme(nuevoId);
+                   localStorage.setItem("idInformePAT", nuevoId);
+                 }
+            }
+        }
+    };
     
-    // Asegurar que siempre haya un ID
-    if (!idInforme) {
-      const nuevoId = generarIdTemporal();
-      setIdInforme(nuevoId);
-      localStorage.setItem("idInformePAT", nuevoId);
-    }
-  }, [location.state]);
+    // Ejecutar la verificación asíncrona
+    checkSavedSession();
+
+  }, [location.state]); // Dependencia original
 
   // ================================
   // 2) GUARDADO AUTOMÁTICO LOCAL
@@ -192,7 +205,7 @@ const MedicionPuestaATierra = () => {
   };
 
   const generarImagenMapa = () => {
-    if (!navigator.geolocation) return alert("Navegador sin geolocalización");
+    if (!navigator.geolocation) return toast.error("Navegador sin geolocalización");
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -201,7 +214,7 @@ const MedicionPuestaATierra = () => {
         setUbicacion({ lat, lon });
         setMapaUrl(`${API_URL}/mapa-static?lat=${lat}&lon=${lon}`);
       },
-      () => alert("No se pudo obtener ubicación")
+      () => toast.error("No se pudo obtener ubicación")
     );
   };
 
@@ -236,7 +249,7 @@ const MedicionPuestaATierra = () => {
         btn.parentNode.replaceChild(newBtn, btn);
 
         newBtn.addEventListener("click", () => {
-          if (!marcador) return alert("Seleccione un punto");
+          if (!marcador) return toast.error("Seleccione un punto");
 
           const lat = marcador.getPosition().lat().toFixed(6);
           const lon = marcador.getPosition().lng().toFixed(6);
@@ -316,7 +329,7 @@ const MedicionPuestaATierra = () => {
       }
     })
     .save()
-    .then(() => {
+    .then(async () => {
       replacements.forEach(({ parent, original, newNode }) => {
         parent.replaceChild(original, newNode);
       });
@@ -324,7 +337,7 @@ const MedicionPuestaATierra = () => {
       if (dateEl) dateEl.style.display = "none";
       element.classList.remove("pdf-export");
 
-      if (window.confirm("PDF generado. ¿Desea limpiar el formulario?")) {
+      if (await confirmar("PDF generado. ¿Desea limpiar el formulario?")) {
         limpiarFormulario();
       }
     });
@@ -361,8 +374,10 @@ const MedicionPuestaATierra = () => {
     if (!formData.metodologia.trim()) camposVacios.push("Metodología");
 
     if (camposVacios.length > 0) {
-      const mensaje = `Los siguientes campos son obligatorios:\n\n${camposVacios.join('\n')}`;
-      alert(mensaje);
+      toast.error(
+        `Los siguientes campos son obligatorios:\n\n${camposVacios.join('\n')}`,
+        { duration: 5000, style: { whiteSpace: 'pre-wrap', textAlign: 'left' } }
+      );
       return false;
     }
 
@@ -378,7 +393,7 @@ const MedicionPuestaATierra = () => {
       return;
     }
 
-    if (!window.confirm("¿Guardar informe en la base de datos?")) return;
+    if (!await confirmar("¿Guardar informe en la base de datos?", "Verifica que todos los datos sean correctos.")) return;
 
     setLoading(true);
 
@@ -419,22 +434,26 @@ const MedicionPuestaATierra = () => {
         setIdInforme(result.remoteId);
         localStorage.setItem("idInformePAT", result.remoteId);
         
-        alert(`Informe guardado EXITOSAMENTE en el servidor.\n\nCódigo de Informe: ${result.remoteId}`);
+        toast.success(`Informe guardado EXITOSAMENTE.\nID: ${result.remoteId}`, { duration: 4000 });
       } else {
         // ERROR O SIN CONEXIÓN
         console.warn("Guardado solo localmente:", result.error);
-        alert("El informe se guardó LOCALMENTE porque no hay conexión o hubo un error.\n\nSe imprimirá con un ID TEMPORAL y se sincronizará automáticamente cuando vuelva la conexión.");
+        toast("Guardado LOCALMENTE (Offline).\nSe sincronizará al conectar.", { icon: '⚠️', duration: 5000 });
       }
 
       // PREGUNTAR ANTES DE LIMPIAR
-      // Esto permite que el usuario imprima el informe con el ID recién generado (o temporal)
-      if (window.confirm("¿Desea limpiar el formulario para comenzar uno nuevo?\n\n(Haga click en CANCELAR si desea IMPRIMIR este informe ahora)")) {
+      const limpiar = await confirmar(
+        "¿Limpiar formulario?",
+        "Confirma SI quieres empezar uno nuevo.\nCancela SI quieres imprimir este primero."
+      );
+      
+      if (limpiar) {
         limpiarFormulario();
       }
 
     } catch (err) {
       console.error(err);
-      alert("Error crítico al procesar el guardado: " + err.message);
+      toast.error("Error crítico al guardar: " + err.message);
     } finally {
       setLoading(false);
     }

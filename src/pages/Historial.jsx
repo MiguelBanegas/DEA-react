@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { listPlanillas } from '../services/api';
+import { listPlanillas, deletePlanilla } from '../services/api';
+import toast from 'react-hot-toast';
+import { confirmar } from '../utils/confirmationToast';
 
 const Historial = () => {
   const [informes, setInformes] = useState([]);
@@ -18,9 +20,7 @@ const Historial = () => {
     try {
       setLoading(true);
       const data = await listPlanillas();
-      console.log(data);
       // La API devuelve { planillas: [...] }
-      // Ordenar por fecha de creación descendente (más reciente primero)
       const ordenados = (data.planillas || []).sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
         const dateB = new Date(b.createdAt || 0);
@@ -30,33 +30,47 @@ const Historial = () => {
       setError(null);
     } catch (err) {
       console.error('Error cargando historial:', err);
-      setError('No se pudieron cargar los informes. Asegúrate de que el servidor API esté corriendo.');
+      toast.error('Error al cargar historial. Verifica el servidor.');
+      setError('No se pudieron cargar los informes.');
     } finally {
       setLoading(false);
     }
   };
-const handleVerInforme = (informe) => {
-  // 1. Guardar ID real de la planilla
-  localStorage.setItem("idInformePAT", informe.id);
 
-  // 2. Guardar datos principales (meta)
-  localStorage.setItem("MedicionPuestaATierra", JSON.stringify(informe.meta || {}));
+  const handleVerInforme = (informe) => {
+    // 1. Guardar ID real de la planilla
+    localStorage.setItem("idInformePAT", informe.id);
+    // 2. Guardar datos principales (meta)
+    localStorage.setItem("MedicionPuestaATierra", JSON.stringify(informe.meta || {}));
+    // 3. Guardar imágenes (si existen)
+    localStorage.setItem("imagenesPAT", JSON.stringify(informe.images || []));
 
-  // 3. Guardar imágenes (si existen)
-  localStorage.setItem("imagenesPAT", JSON.stringify(informe.images || []));
+    const tipo = informe.meta?.tipo || 'verificacion';
+    let ruta = '/verificacion';
+    if (tipo === 'puesta-tierra') {
+      ruta = '/medicion-puesta-tierra';
+    }
+    navigate(ruta, { state: { datosCargados: informe.meta, informeId: informe.id } });
+  };
 
-  // 4. Detectar tipo de planilla
-  const tipo = informe.meta?.tipo || 'verificacion';
+  const handleDelete = async (id) => {
+    const confirmado = await confirmar(
+        "¿Eliminar informe?", 
+        "Esta acción no se puede deshacer."
+    );
+    
+    if (!confirmado) return;
 
-  let ruta = '/verificacion';
-  if (tipo === 'puesta-tierra') {
-    ruta = '/medicion-puesta-tierra';
-  }
-
-  // 5. Navegar mandando datos para editar si hace falta
-  navigate(ruta, { state: { datosCargados: informe.meta, informeId: informe.id } });
-};
-
+    try {
+        await deletePlanilla(id);
+        toast.success("Informe eliminado correctamente");
+        // Actualizar estado local eliminando el item
+        setInformes(prev => prev.filter(i => i.id !== id));
+    } catch (err) {
+        console.error(err);
+        toast.error("Error al eliminar: " + err.message);
+    }
+  };
 
   const informesFiltrados = informes.filter(inf => {
     const cliente = inf.meta?.cliente || inf.meta?.razon_social || inf.meta?.razonSocial || 'Sin Cliente';
@@ -101,21 +115,21 @@ const handleVerInforme = (informe) => {
           </div>
         ) : (
           <div className="table-responsive">
-            <table className="table table-hover table-bordered">
+            <table className="table table-hover table-bordered align-middle">
               <thead className="table-light">
                 <tr>
                   <th>Fecha</th>
                   <th>Cliente / Razón Social</th>
                   <th>Tipo</th>
                   <th>Estado</th>
-                  <th>Acciones</th>
+                  <th style={{ width: '180px' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {informesFiltrados.length > 0 ? (
                   informesFiltrados.map((inf) => (
                     <tr key={inf.id}>
-                      <td>{new Date(inf.createdAt).toLocaleDateString()} {new Date(inf.createdAt).toLocaleTimeString()}</td>
+                      <td>{new Date(inf.createdAt).toLocaleDateString()} <small className="text-muted">{new Date(inf.createdAt).toLocaleTimeString()}</small></td>
                       <td className="fw-bold">
                         {inf.meta?.cliente || inf.meta?.razon_social || inf.meta?.razonSocial || 'Sin Nombre'}
                       </td>
@@ -134,12 +148,22 @@ const handleVerInforme = (informe) => {
                         )}
                       </td>
                       <td>
-                        <button 
-                          className="btn btn-sm btn-primary"
-                          onClick={() => handleVerInforme(inf)}
-                        >
-                          Ver / Editar
-                        </button>
+                        <div className="d-flex gap-2">
+                            <button 
+                            className="btn btn-sm btn-primary"
+                            onClick={() => handleVerInforme(inf)}
+                            title="Ver o Editar"
+                            >
+                            <i className="bi bi-pencil-square"></i> Editar
+                            </button>
+                            <button 
+                            className="btn btn-sm btn-danger"
+                            onClick={() => handleDelete(inf.id)}
+                            title="Eliminar Informe"
+                            >
+                            <i className="bi bi-trash"></i>
+                            </button>
+                        </div>
                       </td>
                     </tr>
                   ))

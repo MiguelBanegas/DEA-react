@@ -26,6 +26,14 @@ export async function updatePlanillaMultipart(id, meta, files = []) {
   return res.json();
 }
 
+export async function deletePlanilla(id) {
+  const res = await fetch(`${API_BASE}/planillas/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
 export async function listPlanillas() {
   const res = await fetch(`${API_BASE}/planillas`);
   if (!res.ok) throw new Error("HTTP " + res.status);
