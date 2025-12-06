@@ -15,7 +15,7 @@ const MedicionPuestaATierra = () => {
   
   // Función para generar un ID temporal único
   const generarIdTemporal = () => {
-    return `PAT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `TEMP-ID-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
   // Nuevo: id real del informe cargado desde historial (corregido el nombre del parámetro)
@@ -303,9 +303,53 @@ const MedicionPuestaATierra = () => {
   };
 
   // ================================
+  // VALIDAR CAMPOS OBLIGATORIOS
+  // ================================
+  const validarCamposObligatorios = () => {
+    const camposVacios = [];
+
+    // Validar Datos del Cliente
+    if (!formData.razonSocial.trim()) camposVacios.push("Razón Social");
+    if (!formData.cuit.trim()) camposVacios.push("CUIT");
+    if (!formData.direccion.trim()) camposVacios.push("Dirección");
+    if (!formData.localidad.trim()) camposVacios.push("Localidad");
+    if (!formData.provincia.trim()) camposVacios.push("Provincia");
+    if (!formData.cp.trim()) camposVacios.push("CP");
+
+    // Validar Datos del Profesional
+    if (!formData.nombreProfesional.trim()) camposVacios.push("Nombre del Profesional");
+    if (!formData.apellidoProfesional.trim()) camposVacios.push("Apellido del Profesional");
+    if (!formData.matriculaProfesional.trim()) camposVacios.push("Matrícula del Profesional");
+
+    // Validar Datos del Instrumento
+    if (!formData.marcaInstrumento.trim()) camposVacios.push("Marca del Instrumento");
+    if (!formData.modeloInstrumento.trim()) camposVacios.push("Modelo del Instrumento");
+    if (!formData.numeroSerieInstrumento.trim()) camposVacios.push("Número de Serie del Instrumento");
+
+    // Validar Datos de la Medición
+    if (!formData.fechaMedicion) camposVacios.push("Fecha de Medición");
+    if (!formData.horaInicio.trim()) camposVacios.push("Hora de Inicio");
+    if (!formData.horaFin.trim()) camposVacios.push("Hora de Fin");
+    if (!formData.metodologia.trim()) camposVacios.push("Metodología");
+
+    if (camposVacios.length > 0) {
+      const mensaje = `Los siguientes campos son obligatorios:\n\n${camposVacios.join('\n')}`;
+      alert(mensaje);
+      return false;
+    }
+
+    return true;
+  };
+
+  // ================================
   // GUARDAR EN FIREBASE
   // ================================
   const guardarEnFirebase = async () => {
+    // Validar campos obligatorios primero
+    if (!validarCamposObligatorios()) {
+      return;
+    }
+
     if (!window.confirm("¿Guardar informe en la base de datos?")) return;
 
     setLoading(true);
@@ -321,13 +365,31 @@ const MedicionPuestaATierra = () => {
 
       const files = imagenesAdjuntas.map((i) => i.file);
 
-      await saveLocalAndMaybeSync(meta, files);
+      // Guardar y sincronizar
+      const result = await saveLocalAndMaybeSync(meta, files);
 
-      alert("Informe guardado correctamente.");
-      limpiarFormulario();
+      // Verificamos si obtuvimos un ID remoto (guardado exitoso en servidor)
+      if (result.remoteId) {
+        // ACTUALIZAMOS EL ID CON EL REAL DE LA BD
+        setIdInforme(result.remoteId);
+        localStorage.setItem("idInformePAT", result.remoteId);
+        
+        alert(`Informe guardado EXITOSAMENTE en el servidor.\n\nCódigo de Informe: ${result.remoteId}`);
+      } else {
+        // ERROR O SIN CONEXIÓN
+        console.warn("Guardado solo localmente:", result.error);
+        alert("El informe se guardó LOCALMENTE porque no hay conexión o hubo un error.\n\nSe imprimirá con un ID TEMPORAL y se sincronizará automáticamente cuando vuelva la conexión.");
+      }
+
+      // PREGUNTAR ANTES DE LIMPIAR
+      // Esto permite que el usuario imprima el informe con el ID recién generado (o temporal)
+      if (window.confirm("¿Desea limpiar el formulario para comenzar uno nuevo?\n\n(Haga click en CANCELAR si desea IMPRIMIR este informe ahora)")) {
+        limpiarFormulario();
+      }
+
     } catch (err) {
       console.error(err);
-      alert("Error al guardar: " + err.message);
+      alert("Error crítico al procesar el guardado: " + err.message);
     } finally {
       setLoading(false);
     }

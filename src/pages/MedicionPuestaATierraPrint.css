@@ -363,10 +363,31 @@
 }
 
 @media print {
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    .print-page {
+        height: 297mm !important;
+        /* Forzar altura completa de A4 al imprimir */
+        min-height: 297mm !important;
+        padding-bottom: 20mm !important;
+        /* Espacio para el footer */
+        position: relative !important;
+        /* Referencia para el footer absoluto */
+        margin: 0 !important;
+        page-break-after: always !important;
+        overflow: hidden;
+        /* Evita que contenido largo empuje el footer */
+    }
+
     .page-footer {
         display: block !important;
-        position: fixed;
-        bottom: 0;
+        position: absolute;
+        /* Absoluto relativo a la página, no fijo a la ventana */
+        bottom: 10mm;
+        /* Margen desde el borde inferior de la hoja */
         left: 0;
         right: 0;
         width: 100%;
@@ -375,14 +396,12 @@
         font-weight: 600;
         color: #000;
         background-color: white;
-        padding: 8px 0;
-        border-top: 2px solid #333;
-        z-index: 9999;
-        /* Asegura visibilidad en cada página impresa */
+        padding: 5px 0;
+        border-top: 1px solid #333;
+        z-index: 100;
     }
 
-    /* Agrega espacio al final de cada página para el footer */
-    .print-page {
-        padding-bottom: 20mm !important;
+    .no-print {
+        display: none !important;
     }
 }
