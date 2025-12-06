@@ -92,6 +92,34 @@ const MedicionPuestaATierra = () => {
         setUbicacion({ lat: datos.latitud, lon: datos.longitud });
       }
 
+      // CARGAR IMÁGENES EXISTENTES
+      const imgsStorage = localStorage.getItem("imagenesPAT");
+      
+      // Corregido: Si datos.images existe pero está vacío, intentar usar localStorage
+      let imgsArray = [];
+      if (datos.images && datos.images.length > 0) {
+        imgsArray = datos.images;
+      } else if (imgsStorage) {
+        imgsArray = JSON.parse(imgsStorage);
+      }
+      
+      if (Array.isArray(imgsArray) && imgsArray.length > 0) {
+        const mappedImgs = imgsArray.map(img => {
+          // Caso 1: String directo (URL)
+          if (typeof img === 'string') return { file: null, preview: img };
+          
+          // Caso 2: Objeto del backend (filename, url, etc) -> Usar .url
+          if (img && img.url) return { file: null, preview: img.url };
+          
+          // Caso 3: Objeto nuestro {file, preview} -> Usar .preview
+          if (img && img.preview) return { file: null, preview: img.preview };
+          
+          return null;
+        }).filter(Boolean); // Eliminar nulos
+        
+        setImagenesAdjuntas(mappedImgs);
+      }
+
       window.history.replaceState({}, document.title);
       return;
     }
@@ -355,18 +383,35 @@ const MedicionPuestaATierra = () => {
     setLoading(true);
 
     try {
+      // SEPARAR IMÁGENES NUEVAS DE EXISTENTES
+      // Nuevas: tienen propiedad 'file' (objeto File)
+      // Existentes: propiedad 'file' es null, y 'preview' es la URL
+      const newFiles = imagenesAdjuntas
+        .filter(i => i.file !== null)
+        .map(i => i.file);
+
+      const existingUrls = imagenesAdjuntas
+        .filter(i => i.file === null)
+        .map(i => i.preview); // La URL está en preview
+
       const meta = {
         ...formData,
         tipo: "puesta-tierra",
         latitud: ubicacion.lat,
         longitud: ubicacion.lon,
         fechaCreacion: new Date().toISOString(),
+        // Enviamos las URLs existentes para que el backend las conserve
+        images: existingUrls 
       };
 
-      const files = imagenesAdjuntas.map((i) => i.file);
+      // Detectar si tenemos un ID real de servidor para ACTUALIZAR en vez de CREAR
+      let targetRemoteId = null;
+      if (idInforme && !idInforme.startsWith("TEMP-ID") && !idInforme.startsWith("PAT-")) {
+        targetRemoteId = idInforme;
+      }
 
-      // Guardar y sincronizar
-      const result = await saveLocalAndMaybeSync(meta, files);
+      // Guardar y sincronizar (enviamos meta, files y opcionalmente el ID remoto para update)
+      const result = await saveLocalAndMaybeSync(meta, newFiles, targetRemoteId);
 
       // Verificamos si obtuvimos un ID remoto (guardado exitoso en servidor)
       if (result.remoteId) {
