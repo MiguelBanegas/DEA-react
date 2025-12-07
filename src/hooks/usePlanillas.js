@@ -14,6 +14,7 @@ import {
   updatePlanillaMultipart,
   deletePlanilla as deletePlanillaAPI,
   listPlanillas, // Importar listPlanillas
+  deleteFile,
 } from "../services/api";
 
 export function usePlanillas() {
@@ -166,11 +167,34 @@ export function usePlanillas() {
 
   const handleDeletePlanilla = useCallback(async (planilla) => {
     if (!planilla || !planilla.id) {
-        toast.error("No se pudo identificar la planilla a eliminar.");
-        return;
+      toast.error("No se pudo identificar la planilla a eliminar.");
+      return;
     }
-
-    // Si la planilla está sincronizada y tiene un ID remoto, intentar borrarla del servidor.
+  
+    // 1. Borrar archivos asociados del servidor
+    const imagesToDelete = planilla.meta?.images || [];
+    if (imagesToDelete.length > 0) {
+      toast.loading(`Eliminando ${imagesToDelete.length} archivo(s) adjunto(s)...`, { id: 'delete-files' });
+      let deletedCount = 0;
+      for (const imageUrl of imagesToDelete) {
+        try {
+          const filename = imageUrl.split('/').pop();
+          if (filename) {
+            await deleteFile(filename);
+            deletedCount++;
+          }
+        } catch (err) {
+          console.error(`Error eliminando archivo ${imageUrl}:`, err);
+        }
+      }
+      if (deletedCount === imagesToDelete.length) {
+        toast.success(`${deletedCount} archivo(s) adjunto(s) eliminados.`, { id: 'delete-files' });
+      } else {
+        toast.error(`No se pudieron eliminar todos los archivos adjuntos.`, { id: 'delete-files' });
+      }
+    }
+  
+    // 2. Borrar el registro de la planilla del servidor
     if (planilla.remoteId && planilla.syncStatus === 'synced') {
       try {
         await deletePlanillaAPI(planilla.remoteId);
@@ -181,7 +205,7 @@ export function usePlanillas() {
       }
     }
     
-    // Borrar de la base de datos local usando el ID local.
+    // 3. Borrar de la base de datos local
     await removeLocal(planilla.id);
     toast.success("Informe eliminado de la lista local.");
   }, []);

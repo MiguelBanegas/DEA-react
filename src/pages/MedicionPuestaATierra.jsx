@@ -438,30 +438,25 @@ const MedicionPuestaATierra = () => {
         .map(i => i.preview); // La URL está en preview
 
       // INTENTAR PERSISTIR EL MAPA
-      // Modificación: Si el mapa ya es una URL remota válida (uploads/...), NO la descargamos de nuevo.
-      // Simplemente la agregamos a existingUrls para que el backend la vincule.
+      // Unificado: Si el mapa es nuevo para este informe, lo descargamos y lo tratamos como un archivo nuevo.
       const mapIsAlreadySaved = existingUrls.includes(mapaUrl);
       
       if (mapaUrl && !mapIsAlreadySaved) {
-          if (mapaUrl.includes("uploads/mapa_")) {
-              // CASO A: El mapa ya es un archivo en el servidor (generado por /mapa-static)
-              // Solo lo vinculamos agregándolo a la lista de URLs existentes
-              existingUrls.push(mapaUrl);
-              console.log("Vinculando mapa existente:", mapaUrl);
-          } else if (mapaUrl.includes("mapa-static")) {
-              // CASO B: Es una URL dinámica (antigua? o generada raro), intentamos bajarla
-              try {
-                  const resp = await fetch(mapaUrl);
-                  if (resp.ok) {
-                      const blob = await resp.blob();
-                      const mapFile = new File([blob], "mapa_ubicacion.png", { type: "image/png" });
-                      newFiles.push(mapFile);
-                      toast.success("Mapa adjuntado al informe");
-                  }
-              } catch (e) {
-                  console.error("Error guardando mapa:", e);
-              }
-          }
+        try {
+            const resp = await fetch(mapaUrl);
+            if (resp.ok) {
+                const blob = await resp.blob();
+                // Usamos un nombre de archivo consistente para poder identificarlo después.
+                const mapFile = new File([blob], "mapa_ubicacion.png", { type: "image/png" });
+                newFiles.push(mapFile);
+                toast.success("Mapa adjuntado para guardar.");
+            } else {
+                toast.error(`No se pudo procesar el mapa desde ${mapaUrl}`);
+            }
+        } catch (e) {
+            console.error("Error al adjuntar el mapa:", e);
+            toast.error("Error al adjuntar el mapa para el guardado.");
+        }
       }
 
       const meta = {
