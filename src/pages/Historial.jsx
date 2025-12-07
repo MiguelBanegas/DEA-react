@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { listPlanillas, deletePlanilla } from '../services/api';
+import { usePlanillas } from '../hooks/usePlanillas';
 import toast from 'react-hot-toast';
 import { confirmar } from '../utils/confirmationToast';
 
@@ -11,17 +11,13 @@ const Historial = () => {
   const [error, setError] = useState(null);
   const [filtro, setFiltro] = useState('');
   const navigate = useNavigate();
+  const { getAllLocal, handleDeletePlanilla, syncQueue } = usePlanillas();
 
-  useEffect(() => {
-    cargarInformes();
-  }, []);
-
-  const cargarInformes = async () => {
+  const cargarInformes = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await listPlanillas();
-      // La API devuelve { planillas: [...] }
-      const ordenados = (data.planillas || []).sort((a, b) => {
+      const localData = await getAllLocal();
+      const ordenados = localData.sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
         const dateB = new Date(b.createdAt || 0);
         return dateB - dateA;
@@ -29,31 +25,43 @@ const Historial = () => {
       setInformes(ordenados);
       setError(null);
     } catch (err) {
-      console.error('Error cargando historial:', err);
-      toast.error('Error al cargar historial. Verifica el servidor.');
-      setError('No se pudieron cargar los informes.');
+      console.error('Error cargando historial local:', err);
+      toast.error('Error al cargar historial local.');
+      setError('No se pudieron cargar los informes locales.');
     } finally {
       setLoading(false);
+    }
+  }, [getAllLocal]);
+
+  useEffect(() => {
+    cargarInformes();
+  }, [cargarInformes]);
+
+  const handleSync = async () => {
+    const success = await syncQueue(true); // true para indicar que es un trigger manual
+    if (success) {
+      // Si la sincronización (especialmente el pull) fue exitosa, recargamos los datos
+      cargarInformes();
     }
   };
 
   const handleVerInforme = (informe) => {
-    // 1. Guardar ID real de la planilla
-    localStorage.setItem("idInformePAT", informe.id);
-    // 2. Guardar datos principales (meta)
-    localStorage.setItem("MedicionPuestaATierra", JSON.stringify(informe.meta || {}));
-    // 3. Guardar imágenes (si existen)
-    localStorage.setItem("imagenesPAT", JSON.stringify(informe.images || []));
-
     const tipo = informe.meta?.tipo || 'verificacion';
     let ruta = '/verificacion';
     if (tipo === 'puesta-tierra') {
       ruta = '/medicion-puesta-tierra';
     }
-    navigate(ruta, { state: { datosCargados: informe.meta, informeId: informe.id } });
+    navigate(ruta, { 
+      state: { 
+        datosCargados: informe.meta, 
+        localId: informe.id, 
+        remoteId: informe.remoteId,
+        imagenes: informe.files || [] 
+      } 
+    });
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (informe) => {
     const confirmado = await confirmar(
         "¿Eliminar informe?", 
         "Esta acción no se puede deshacer."
@@ -62,13 +70,12 @@ const Historial = () => {
     if (!confirmado) return;
 
     try {
-        await deletePlanilla(id);
-        toast.success("Informe eliminado correctamente");
-        // Actualizar estado local eliminando el item
-        setInformes(prev => prev.filter(i => i.id !== id));
+        await handleDeletePlanilla(informe);
+        // La UI se actualiza al recargar los informes
+        cargarInformes();
     } catch (err) {
         console.error(err);
-        toast.error("Error al eliminar: " + err.message);
+        toast.error("Error al eliminar: " + (err.message || 'Error desconocido'));
     }
   };
 
@@ -85,8 +92,8 @@ const Historial = () => {
       <div className="container py-5">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2>Historial de Informes</h2>
-          <button className="btn btn-outline-primary" onClick={cargarInformes}>
-            <i className="bi bi-arrow-clockwise"></i> Actualizar
+          <button className="btn btn-primary" onClick={handleSync}>
+            <i className="bi bi-arrow-repeat"></i> Sincronizar
           </button>
         </div>
 
@@ -128,7 +135,7 @@ const Historial = () => {
               <tbody>
                 {informesFiltrados.length > 0 ? (
                   informesFiltrados.map((inf) => (
-                    <tr key={inf.id}>
+                    <tr key={inf.id} className={inf.syncStatus !== 'synced' ? 'table-warning' : ''}>
                       <td>{new Date(inf.createdAt).toLocaleDateString()} <small className="text-muted">{new Date(inf.createdAt).toLocaleTimeString()}</small></td>
                       <td className="fw-bold">
                         {inf.meta?.cliente || inf.meta?.razon_social || inf.meta?.razonSocial || 'Sin Nombre'}
@@ -144,7 +151,7 @@ const Historial = () => {
                         {inf.syncStatus === 'synced' ? (
                           <span className="badge bg-success">Sincronizado</span>
                         ) : (
-                          <span className="badge bg-secondary">{inf.syncStatus}</span>
+                          <span className="badge bg-secondary text-capitalize">{inf.syncStatus}</span>
                         )}
                       </td>
                       <td>
@@ -158,7 +165,7 @@ const Historial = () => {
                             </button>
                             <button 
                             className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(inf.id)}
+                            onClick={() => handleDelete(inf)}
                             title="Eliminar Informe"
                             >
                             <i className="bi bi-trash"></i>

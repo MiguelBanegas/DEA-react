@@ -30,14 +30,20 @@ const Verificacion = () => {
     { id: Date.now(), numeroToma: '', sector: '', descripcionTerreno: '', usoPuestaTierra: '', esquemaConexion: '', valorResistencia: '', cumple: '', continuidad: '', capacidadCarga: '', proteccionContactos: '', desconexionAutomatica: '' }
   ]);
   const [seleccionados, setSeleccionados] = useState([]);
-  const { saveLocalAndMaybeSync } = usePlanillas();
+  const { saveOrUpdateLocalPlanilla } = usePlanillas();
   const location = useLocation();
+  const [informeId, setInformeId] = useState(null);
 
   useEffect(() => {
     // Check if data was passed via navigation (from Historial)
     if (location.state && location.state.datosCargados) {
       const datos = location.state.datosCargados;
+      const id = location.state.localId;
       console.log("Cargando datos desde historial:", datos);
+      
+      if(id) {
+        setInformeId(id);
+      }
       
       // Cargar formData
       const newFormData = { ...formData };
@@ -279,7 +285,7 @@ const Verificacion = () => {
         fechaCreacion: new Date().toISOString()
       };
       
-      await saveLocalAndMaybeSync(meta, []);
+      await saveOrUpdateLocalPlanilla(meta, [], informeId);
       alert('Informe guardado correctamente en la base de datos.');
     } catch (error) {
       console.error('Error al guardar:', error);

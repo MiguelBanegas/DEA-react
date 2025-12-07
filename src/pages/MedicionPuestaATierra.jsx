@@ -21,14 +21,10 @@ const MedicionPuestaATierra = () => {
     return `TEMP-ID-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // Nuevo: id real del informe cargado desde historial (corregido el nombre del parámetro)
-  const idInformeFromHistorial = location.state?.informeId || location.state?.idInforme || null;
-
-  // Nuevo: id almacenado localmente (si estás en un formulario que ya venías completando)
-  const idLocal = localStorage.getItem("idInformePAT");
-
-  // Nuevo: selecciona el id correcto según la lógica, o genera uno temporal
-  const [idInforme, setIdInforme] = useState(idInformeFromHistorial || idLocal || generarIdTemporal());
+  // El ID se inicializa como null. Se asignará en el useEffect de carga.
+  // Esto evita usar un ID de localStorage de un informe anterior por error.
+  const [idInforme, setIdInforme] = useState(null);
+  const [showNuevoModal, setShowNuevoModal] = useState(false);
 
   const [formData, setFormData] = useState({
     razonSocial: "",
@@ -69,7 +65,7 @@ const MedicionPuestaATierra = () => {
   const [deletedFiles, setDeletedFiles] = useState([]);
 
   const imagenMapaRef = useRef(null);
-  const { saveLocalAndMaybeSync } = usePlanillas();
+  const { saveOrUpdateLocalPlanilla } = usePlanillas();
 
   // ================================
   // 1) CARGA INICIAL SEGÚN SI ES NUEVO O DESDE HISTORIAL
@@ -79,9 +75,11 @@ const MedicionPuestaATierra = () => {
     if (location.state && location.state.datosCargados) {
       const datos = location.state.datosCargados;
 
-      setIdInforme(idInformeFromHistorial);
-      localStorage.setItem("idInformePAT", idInformeFromHistorial);
-
+      if (location.state.localId) {
+        setIdInforme(location.state.localId);
+        localStorage.setItem("idInformePAT", location.state.localId);
+      }
+      
       const updated = { ...formData };
       Object.keys(updated).forEach((k) => {
         if (datos[k] !== undefined) updated[k] = datos[k];
@@ -145,44 +143,12 @@ const MedicionPuestaATierra = () => {
       return;
     }
 
-    const saved = localStorage.getItem("medicionFormData");
-    const localID = localStorage.getItem("idInformePAT");
+    // Si no viene desde historial, es un informe nuevo.
+    // Limpiamos todo y generamos un ID temporal para asegurar un estado limpio.
+    limpiarFormulario(true); // true para generar un nuevo ID temporal
 
-    // Si había datos guardados localmente, avisamos si desea continuar
-    const checkSavedSession = async () => {
-        if (saved && !idInformeFromHistorial) {
-            const continuar = await confirmar(
-                "Se encontró un informe en progreso.",
-                "¿Desea recuperar los datos no guardados?"
-            );
-            
-            if (continuar) {
-                try {
-                setFormData(JSON.parse(saved));
-                setIdInforme(localID || null);
-                } catch {}
-            } else {
-                limpiarFormulario();
-            }
-        } else {
-            // Si no había nada (o venimos de historial), inicializar fechas/ID si hace falta
-            if (!idInformeFromHistorial && !saved) {
-                 const today = new Date().toISOString().split("T")[0];
-                 setFormData((prev) => ({ ...prev, fechaMedicion: today }));
-                 
-                 if (!idInforme) {
-                   const nuevoId = generarIdTemporal();
-                   setIdInforme(nuevoId);
-                   localStorage.setItem("idInformePAT", nuevoId);
-                 }
-            }
-        }
-    };
-    
-    // Ejecutar la verificación asíncrona
-    checkSavedSession();
-
-  }, [location.state]); // Dependencia original
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   // ================================
   // 2) GUARDADO AUTOMÁTICO LOCAL
@@ -515,7 +481,7 @@ const MedicionPuestaATierra = () => {
       }
 
       // Guardar y sincronizar (enviamos meta, files y opcionalmente el ID remoto para update)
-      const result = await saveLocalAndMaybeSync(meta, newFiles, targetRemoteId);
+      const result = await saveOrUpdateLocalPlanilla(meta, newFiles, idInforme, targetRemoteId);
 
       // Verificamos si obtuvimos un ID remoto (guardado exitoso en servidor)
       if (result.remoteId) {
@@ -551,15 +517,8 @@ const MedicionPuestaATierra = () => {
         toast("Guardado LOCALMENTE (Offline).\nSe sincronizará al conectar.", { icon: '⚠️', duration: 5000 });
       }
 
-      // PREGUNTAR ANTES DE LIMPIAR
-      const limpiar = await confirmar(
-        "¿Limpiar formulario?",
-        "Confirma SI quieres empezar uno nuevo.\nCancela SI quieres imprimir este primero."
-      );
-      
-      if (limpiar) {
-        limpiarFormulario();
-      }
+      // Mostrar el modal para preguntar si quiere crear uno nuevo
+      setShowNuevoModal(true);
 
     } catch (err) {
       console.error(err);
@@ -572,7 +531,7 @@ const MedicionPuestaATierra = () => {
   // ================================
   // LIMPIAR FORMULARIO COMPLETO
   // ================================
-  const limpiarFormulario = () => {
+  const limpiarFormulario = (generarNuevoId = false) => {
     setFormData({
       razonSocial: "",
       cuit: "",
@@ -612,7 +571,14 @@ const MedicionPuestaATierra = () => {
     localStorage.removeItem("medicionFormData");
     localStorage.removeItem("idInformePAT");
 
-    setIdInforme(null);
+    // Si se indica, se genera un ID nuevo para el próximo informe.
+    // Si no, se limpia el ID actual.
+    if (generarNuevoId) {
+      const nuevoId = generarIdTemporal();
+      setIdInforme(nuevoId);
+    } else {
+      setIdInforme(null);
+    }
   };
   
 
@@ -1181,10 +1147,6 @@ return (
             Limpiar
           </button>
 
-          {/* <button className="btn btn-success" disabled> */} 
-          {/*   Exportar PDF */}
-          {/* </button> */}
-
           <button
             className="btn btn-info text-white"
             onClick={guardarEnFirebase}
@@ -1209,6 +1171,11 @@ return (
             >
               Vista previa de impresión
             </button>
+          )}
+
+          {/* Botón para crear un nuevo informe, aparece después de guardar */}
+          {idInforme && !idInforme.startsWith("TEMP-ID") && (
+             <button className="btn btn-warning" onClick={() => setShowNuevoModal(true)}>Nuevo Informe</button>
           )}
 
         </div>
@@ -1262,6 +1229,35 @@ return (
           </div>
         </div>
       </div>
+
+      {/* Modal para confirmar la creación de un nuevo informe */}
+      {showNuevoModal && (
+        <div className="modal fade show" style={{ display: "block", background: "rgba(0,0,0,0.4)" }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Informe Guardado</h5>
+                <button type="button" className="btn-close" onClick={() => setShowNuevoModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                El informe actual ha sido guardado. ¿Deseas empezar un informe nuevo desde cero?
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setShowNuevoModal(false)}>No, seguir aquí</button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    limpiarFormulario(true); // Limpiar y generar nuevo ID
+                    setShowNuevoModal(false);
+                  }}
+                >
+                  Sí, crear nuevo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );
