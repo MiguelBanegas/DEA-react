@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.API_URL || "https://dea.mabcontrol.ar";
+export const API_BASE = import.meta.env.API_URL || "https://dea.mabcontrol.ar";
 
 export async function createPlanillaMultipart(meta, files = []) {
   const fd = new FormData();
@@ -36,6 +36,13 @@ export async function deletePlanilla(id) {
 
 export async function listPlanillas() {
   const res = await fetch(`${API_BASE}/planillas`);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+export async function deleteFile(filename) {
+  const res = await fetch(`${API_BASE}/uploads/${filename}`, {
+    method: "DELETE",
+  });
   if (!res.ok) throw new Error("HTTP " + res.status);
   return res.json();
 }

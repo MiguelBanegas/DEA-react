@@ -27,6 +27,7 @@ export function usePlanillas() {
       let remoteId = targetRemoteId;
       let success = false;
       let error = null;
+      let planilla = null;
 
       if (navigator.onLine) {
         try {
@@ -58,7 +59,12 @@ export function usePlanillas() {
             remoteId = newId;
           }
 
-          // ACTUALIZAR localmente con la respuesta del servidor (incluye URLs de imágenes)
+          // Capturamos datos actualizados del servidor
+          if (resp && resp.planilla) {
+            planilla = resp.planilla;
+          }
+
+          // ACTUALIZAR localmente
           const updatedMeta = resp.planilla
             ? { ...meta, ...resp.planilla }
             : meta;
@@ -66,7 +72,7 @@ export function usePlanillas() {
           await updateLocal(id, {
             syncStatus: "synced",
             remoteId,
-            meta: updatedMeta, // Guardamos el meta actualizado que devuelve el server
+            meta: updatedMeta,
           });
           success = true;
         } catch (err) {
@@ -75,8 +81,7 @@ export function usePlanillas() {
         }
       }
 
-      // Devolver objeto completo con detalles
-      return { localId: id, remoteId, success, error };
+      return { localId: id, remoteId, success, error, planilla };
     },
     []
   );
@@ -88,7 +93,6 @@ export function usePlanillas() {
       try {
         const resp = await createPlanillaMultipart(p.meta, p.files || []);
 
-        // Actualizar también al sincronizar en segundo plano
         const updatedMeta = resp.planilla
           ? { ...p.meta, ...resp.planilla }
           : p.meta;

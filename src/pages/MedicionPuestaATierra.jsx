@@ -7,9 +7,10 @@ import Navbar from "../components/Navbar";
 import { usePlanillas } from "../hooks/usePlanillas";
 import toast from 'react-hot-toast';
 import { confirmar } from '../utils/confirmationToast';
+import { API_BASE, deleteFile } from "../services/api"; // Importamos la base correcta
 import "./Verificacion.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_URL = API_BASE; // Usamos la misma constante mapeada
 
 const MedicionPuestaATierra = () => {
   const navigate = useNavigate();
@@ -65,6 +66,7 @@ const MedicionPuestaATierra = () => {
   const [mapaUrl, setMapaUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [imagenesAdjuntas, setImagenesAdjuntas] = useState([]);
+  const [deletedFiles, setDeletedFiles] = useState([]);
 
   const imagenMapaRef = useRef(null);
   const { saveLocalAndMaybeSync } = usePlanillas();
@@ -90,36 +92,53 @@ const MedicionPuestaATierra = () => {
 
       setFormData(updated);
 
-      if (datos.latitud && datos.longitud) {
-        setUbicacion({ lat: datos.latitud, lon: datos.longitud });
-      }
-
+      
+      
       // CARGAR IMÁGENES EXISTENTES
       const imgsStorage = localStorage.getItem("imagenesPAT");
       
-      // Corregido: Si datos.images existe pero está vacío, intentar usar localStorage
       let imgsArray = [];
-      if (datos.images && datos.images.length > 0) {
-        imgsArray = datos.images;
-      } else if (imgsStorage) {
+      // Priorizar localStorage porque trae los objetos completos con 'originalname'
+      if (imgsStorage) {
         imgsArray = JSON.parse(imgsStorage);
+      } else if (datos.images && datos.images.length > 0) {
+        imgsArray = datos.images;
       }
       
+      let existingMapUrl = null;
+
       if (Array.isArray(imgsArray) && imgsArray.length > 0) {
         const mappedImgs = imgsArray.map(img => {
-          // Caso 1: String directo (URL)
-          if (typeof img === 'string') return { file: null, preview: img };
-          
-          // Caso 2: Objeto del backend (filename, url, etc) -> Usar .url
-          if (img && img.url) return { file: null, preview: img.url };
-          
-          // Caso 3: Objeto nuestro {file, preview} -> Usar .preview
-          if (img && img.preview) return { file: null, preview: img.preview };
-          
-          return null;
+            // INTENTAR DETECTAR MAPA
+            // Mejorado: detecta tanto el nombre original como el patrón de URL del servidor
+            const isMap = (img && img.originalname === "mapa_ubicacion.png") || 
+                          (typeof img === 'string' && (img.includes('mapa_ubicacion') || img.includes('uploads/mapa_'))) ||
+                          (img && img.url && img.url.includes('uploads/mapa_'));
+
+            let previewUrl = null;
+            if (typeof img === 'string') previewUrl = img;
+            else if (img && img.url) previewUrl = img.url;
+            else if (img && img.preview) previewUrl = img.preview;
+
+            if (isMap && previewUrl) existingMapUrl = previewUrl;
+
+            return previewUrl ? { file: null, preview: previewUrl } : null;
         }).filter(Boolean); // Eliminar nulos
         
         setImagenesAdjuntas(mappedImgs);
+      }
+
+      if (datos.latitud && datos.longitud) {
+        setUbicacion({ lat: datos.latitud, lon: datos.longitud });
+        
+        // SI ENCONTRAMOS EL MAPA EN LOS ADJUNTOS, LO USAMOS
+        // IMPORTANTE: NO generamos uno nuevo automáticamente para evitar archivos huérfanos en el servidor.
+        // Si el usuario quiere actualizar el mapa, debe hacerlo manualmente.
+        if (existingMapUrl) {
+            setMapaUrl(existingMapUrl);
+        } else {
+            console.log("Mapa no encontrado en adjuntos. No se autogenerará para evitar duplicados.");
+        }
       }
 
       window.history.replaceState({}, document.title);
@@ -204,6 +223,35 @@ const MedicionPuestaATierra = () => {
     }
   };
 
+  const handleDeleteImage = async (index) => {
+      if (!await confirmar("¿Borrar imagen?", "Esta imagen se quitará del informe al guardar.")) return;
+      
+      setImagenesAdjuntas(prev => {
+          const newImgs = [...prev];
+          const deletedImg = newImgs[index];
+          
+          // Si la imagen borrada era el mapa actual, limpiamos la preview del mapa también
+          let deletedUrl = null;
+          if (deletedImg && deletedImg.preview) deletedUrl = deletedImg.preview;
+          else if (typeof deletedImg === 'string') deletedUrl = deletedImg;
+          
+          if (deletedUrl && mapaUrl === deletedUrl) {
+              setMapaUrl(null);
+          }
+          
+          // AGREGAR A LISTA DE BORRADO FÍSICO (Solo si viene del backend 'uploads/')
+          if (deletedUrl && deletedUrl.includes('uploads/')) {
+              const filename = deletedUrl.split('/').pop();
+              if (filename) {
+                  setDeletedFiles(curr => [...curr, filename]);
+              }
+          }
+
+          newImgs.splice(index, 1);
+          return newImgs;
+      });
+  };
+
   const generarImagenMapa = () => {
     if (!navigator.geolocation) return toast.error("Navegador sin geolocalización");
 
@@ -212,7 +260,14 @@ const MedicionPuestaATierra = () => {
         const lat = pos.coords.latitude.toFixed(6);
         const lon = pos.coords.longitude.toFixed(6);
         setUbicacion({ lat, lon });
-        setMapaUrl(`${API_URL}/mapa-static?lat=${lat}&lon=${lon}`);
+        
+        // FETCH REAL IMAGE URL FROM JSON
+        fetch(`${API_URL}/mapa-static?lat=${lat}&lon=${lon}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.imageUrl) setMapaUrl(data.imageUrl);
+            })
+            .catch(err => toast.error("Error generando mapa"));
       },
       () => toast.error("No se pudo obtener ubicación")
     );
@@ -255,7 +310,14 @@ const MedicionPuestaATierra = () => {
           const lon = marcador.getPosition().lng().toFixed(6);
 
           setUbicacion({ lat, lon });
-          setMapaUrl(`${API_URL}/mapa-static?lat=${lat}&lon=${lon}`);
+          
+          // FETCH REAL IMAGE URL
+          fetch(`${API_URL}/mapa-static?lat=${lat}&lon=${lon}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.imageUrl) setMapaUrl(data.imageUrl);
+            })
+            .catch(err => console.error("Error generando mapa manual:", err));
 
           const modalEl = document.getElementById("modalMapa");
           const modal = window.bootstrap.Modal.getInstance(modalEl);
@@ -409,6 +471,33 @@ const MedicionPuestaATierra = () => {
         .filter(i => i.file === null)
         .map(i => i.preview); // La URL está en preview
 
+      // INTENTAR PERSISTIR EL MAPA
+      // Modificación: Si el mapa ya es una URL remota válida (uploads/...), NO la descargamos de nuevo.
+      // Simplemente la agregamos a existingUrls para que el backend la vincule.
+      const mapIsAlreadySaved = existingUrls.includes(mapaUrl);
+      
+      if (mapaUrl && !mapIsAlreadySaved) {
+          if (mapaUrl.includes("uploads/mapa_")) {
+              // CASO A: El mapa ya es un archivo en el servidor (generado por /mapa-static)
+              // Solo lo vinculamos agregándolo a la lista de URLs existentes
+              existingUrls.push(mapaUrl);
+              console.log("Vinculando mapa existente:", mapaUrl);
+          } else if (mapaUrl.includes("mapa-static")) {
+              // CASO B: Es una URL dinámica (antigua? o generada raro), intentamos bajarla
+              try {
+                  const resp = await fetch(mapaUrl);
+                  if (resp.ok) {
+                      const blob = await resp.blob();
+                      const mapFile = new File([blob], "mapa_ubicacion.png", { type: "image/png" });
+                      newFiles.push(mapFile);
+                      toast.success("Mapa adjuntado al informe");
+                  }
+              } catch (e) {
+                  console.error("Error guardando mapa:", e);
+              }
+          }
+      }
+
       const meta = {
         ...formData,
         tipo: "puesta-tierra",
@@ -434,6 +523,27 @@ const MedicionPuestaATierra = () => {
         setIdInforme(result.remoteId);
         localStorage.setItem("idInformePAT", result.remoteId);
         
+        // ACTUALIZACIÓN DE IMÁGENES AL INSTANTE (incluyendo mapa nuevo)
+        // result.planilla viene del hook modificado
+        if (result.planilla && result.planilla.images) {
+            const nuevasImgs = result.planilla.images.map(url => ({ file: null, preview: url }));
+            setImagenesAdjuntas(nuevasImgs);
+            localStorage.setItem("imagenesPAT", JSON.stringify(result.planilla.images));
+        }
+
+        // PROCESAR BORRADO FÍSICO DE ARCHIVOS HUÉRFANOS
+        if (deletedFiles.length > 0) {
+            for (const filename of deletedFiles) {
+                try {
+                    await deleteFile(filename);
+                    console.log("Archivo eliminado físicamente:", filename);
+                } catch (err) {
+                    console.error("Error borrando archivo físico:", filename, err);
+                }
+            }
+            setDeletedFiles([]); // Limpiar cola tras éxito
+        }
+
         toast.success(`Informe guardado EXITOSAMENTE.\nID: ${result.remoteId}`, { duration: 4000 });
       } else {
         // ERROR O SIN CONEXIÓN
@@ -1014,17 +1124,34 @@ return (
                       </div>
                       <div className="d-flex flex-wrap gap-2">
                         {imagenesAdjuntas.map((img, idx) => (
-                          <img
-                            key={idx}
-                            src={img.preview}
-                            alt="Adjunto"
-                            style={{
-                              width: "80px",
-                              height: "80px",
-                              objectFit: "cover",
-                            }}
-                            className="img-thumbnail"
-                          />
+                          <div key={idx} style={{ position: 'relative' }}>
+                              <img
+                                src={img.preview}
+                                alt="Adjunto"
+                                style={{
+                                  width: "80px",
+                                  height: "80px",
+                                  objectFit: "cover",
+                                }}
+                                className="img-thumbnail"
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-sm p-0 d-flex justify-content-center align-items-center"
+                                style={{
+                                    position: 'absolute',
+                                    top: '-5px',
+                                    right: '-5px',
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    fontSize: '12px'
+                                }}
+                                onClick={() => handleDeleteImage(idx)}
+                              >
+                                &times;
+                              </button>
+                          </div>
                         ))}
                       </div>
                     </div>
