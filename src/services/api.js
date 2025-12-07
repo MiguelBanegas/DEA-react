@@ -39,10 +39,18 @@ export async function listPlanillas() {
   if (!res.ok) throw new Error("HTTP " + res.status);
   return res.json();
 }
+
 export async function deleteFile(filename) {
+  // Se agregó el objeto de opciones para el método
   const res = await fetch(`${API_BASE}/uploads/${filename}`, {
     method: "DELETE",
   });
-  if (!res.ok) throw new Error("HTTP " + res.status);
+
+  if (!res.ok) {
+    // Es una buena práctica también intentar leer el error del body si lo hay
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(`HTTP ${res.status}: ${errorBody.error || res.statusText}`);
+  }
+
   return res.json();
 }
