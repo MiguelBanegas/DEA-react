@@ -51,11 +51,16 @@ const Historial = () => {
     if (tipo === 'puesta-tierra') {
       ruta = '/medicion-puesta-tierra';
     }
+
+    // Corregido: Unir meta y las imágenes de nivel superior para que lleguen a la siguiente pantalla
+    const datosCargados = { ...informe.meta, images: informe.images || [] };
+
     navigate(ruta, { 
       state: { 
-        datosCargados: informe.meta, 
+        datosCargados: datosCargados, 
         localId: informe.id, 
         remoteId: informe.remoteId,
+        // Se mantiene el envío de `files` por si el informe es local y no está sincronizado
         imagenes: informe.files || [] 
       } 
     });

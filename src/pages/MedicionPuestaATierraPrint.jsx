@@ -17,7 +17,8 @@ export default function MedicionPuestaATierraPrint() {
     }
 
     if (imgs) {
-      setImagenes(JSON.parse(imgs));
+      const parsedImgs = JSON.parse(imgs);
+      setImagenes(parsedImgs);
     }
 
     // Cambiar el título del documento para que lo use la ventana de impresión
@@ -71,7 +72,7 @@ export default function MedicionPuestaATierraPrint() {
     <div className="print-container" data-id={data.idInformePAT}>
 
       {/* ====================== PÁGINA 1 ====================== */}
-      <div className="print-page">
+      <div className={`print-page ${obsLargas ? 'break-after' : ''}`}>
         <div className="header-print">
           <img src="/img/logo5.jpeg" alt="Logo" className="logo-print" />
           <div>
@@ -150,7 +151,7 @@ export default function MedicionPuestaATierraPrint() {
 
       {/* ====================== PÁGINA 2 (OBSERVACIONES LARGAS) ====================== */}
       {obsLargas && (
-        <div className="print-page">
+        <div className="print-page break-after">
           <div className="section-wrapper">
             <h2 className="section-title">Observaciones</h2>
             <div className="section-box">

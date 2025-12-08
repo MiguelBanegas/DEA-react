@@ -61,6 +61,7 @@ const MedicionPuestaATierra = () => {
   const [ubicacion, setUbicacion] = useState({ lat: null, lon: null });
   const [mapaUrl, setMapaUrl] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [imagenesCargando, setImagenesCargando] = useState(false);
   const [imagenesAdjuntas, setImagenesAdjuntas] = useState([]);
   const [deletedFiles, setDeletedFiles] = useState([]);
 
@@ -93,50 +94,51 @@ const MedicionPuestaATierra = () => {
       
       
       // CARGAR IMÁGENES EXISTENTES
-      const imgsStorage = localStorage.getItem("imagenesPAT");
-      
-      let imgsArray = [];
-      // Priorizar localStorage porque trae los objetos completos con 'originalname'
-      if (imgsStorage) {
-        imgsArray = JSON.parse(imgsStorage);
-      } else if (datos.images && datos.images.length > 0) {
-        imgsArray = datos.images;
+      const imagenesDesdeEstado = location.state.imagenes || []; // De `informe.files`
+      const urlsDesdeMeta = datos.images || []; // De `informe.images` (ahora dentro de datosCargados)
+
+      const procesarFiles = async (files) => {
+        setImagenesCargando(true);
+        const promises = files.map(file => new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve({ file, preview: e.target.result });
+          reader.readAsDataURL(file);
+        }));
+        const processed = await Promise.all(promises);
+        setImagenesAdjuntas(processed);
+
+        const mapImage = processed.find(img => img.file && img.file.name === 'mapa_ubicacion.png');
+        if (mapImage) {
+          setMapaUrl(mapImage.preview);
+        }
+        setImagenesCargando(false);
+      };
+
+      const procesarUrls = (urlObjects) => {
+        let mapUrl = null;
+        const mapped = urlObjects.map(imgObj => {
+          const url = imgObj.url;
+          const isMap = (imgObj.originalname === 'mapa_ubicacion.png') || 
+                        (typeof url === 'string' && (url.includes('mapa_ubicacion') || url.includes('uploads/mapa_')));
+          if (isMap) {
+            mapUrl = url;
+          }
+          return { file: null, preview: url };
+        });
+        setImagenesAdjuntas(mapped);
+        if (mapUrl) {
+          setMapaUrl(mapUrl);
+        }
+      };
+
+      if (imagenesDesdeEstado.length > 0) {
+        procesarFiles(imagenesDesdeEstado);
+      } else if (urlsDesdeMeta.length > 0) {
+        procesarUrls(urlsDesdeMeta);
       }
       
-      let existingMapUrl = null;
-
-      if (Array.isArray(imgsArray) && imgsArray.length > 0) {
-        const mappedImgs = imgsArray.map(img => {
-            // INTENTAR DETECTAR MAPA
-            // Mejorado: detecta tanto el nombre original como el patrón de URL del servidor
-            const isMap = (img && img.originalname === "mapa_ubicacion.png") || 
-                          (typeof img === 'string' && (img.includes('mapa_ubicacion') || img.includes('uploads/mapa_'))) ||
-                          (img && img.url && img.url.includes('uploads/mapa_'));
-
-            let previewUrl = null;
-            if (typeof img === 'string') previewUrl = img;
-            else if (img && img.url) previewUrl = img.url;
-            else if (img && img.preview) previewUrl = img.preview;
-
-            if (isMap && previewUrl) existingMapUrl = previewUrl;
-
-            return previewUrl ? { file: null, preview: previewUrl } : null;
-        }).filter(Boolean); // Eliminar nulos
-        
-        setImagenesAdjuntas(mappedImgs);
-      }
-
       if (datos.latitud && datos.longitud) {
         setUbicacion({ lat: datos.latitud, lon: datos.longitud });
-        
-        // SI ENCONTRAMOS EL MAPA EN LOS ADJUNTOS, LO USAMOS
-        // IMPORTANTE: NO generamos uno nuevo automáticamente para evitar archivos huérfanos en el servidor.
-        // Si el usuario quiere actualizar el mapa, debe hacerlo manualmente.
-        if (existingMapUrl) {
-            setMapaUrl(existingMapUrl);
-        } else {
-            console.log("Mapa no encontrado en adjuntos. No se autogenerará para evitar duplicados.");
-        }
       }
 
       window.history.replaceState({}, document.title);
@@ -1172,8 +1174,13 @@ return (
           {idInforme && (
             <button
               className="btn btn-primary"
+              disabled={imagenesCargando}
               onClick={() => {
                 // Guardar imágenes en localStorage antes de navegar
+                if (imagenesCargando) {
+                  toast.error("Espere a que las imágenes terminen de cargar.");
+                  return;
+                }
                 const imagenesBase64 = imagenesAdjuntas.map(img => img.preview);
                 localStorage.setItem("imagenesPAT", JSON.stringify(imagenesBase64));
                 localStorage.setItem("medicionFormData", JSON.stringify(formData));
@@ -1182,7 +1189,7 @@ return (
                 navigate("/medicion-puesta-tierra-print");
               }}
             >
-              Vista previa de impresión
+              {imagenesCargando ? 'Cargando Imágenes...' : 'Vista previa de impresión'}
             </button>
           )}
 
