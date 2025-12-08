@@ -1,407 +1,173 @@
+/* ================================================ */
+/*      ESTILOS PARA LA VISTA DE IMPRESIÓN          */
+/* ================================================ */
+
+/* --- Configuración Base y de Impresión --- */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact; /* Chrome, Safari */
+    print-color-adjust: exact; /* Standard */
+    background-color: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-actions {
+    display: none;
+  }
+  .print-page {
+    page-break-after: always;
+    box-shadow: none;
+    margin: 0;
+    border: none;
+  }
+}
+
+/* --- Estilos Generales (para vista previa en pantalla) --- */
+body {
+  background-color: #e9ecef; /* Un gris claro para el fondo */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #212529; /* Negro suave para el texto */
+}
+
 .print-container {
-    width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
 }
 
 .print-page {
-    width: 210mm;
-    min-height: auto;
-    /* Permite que la página se ajuste al contenido */
-    padding: 8mm 15mm 15mm 15mm;
-    /* Márgenes reducidos para aprovechar más espacio */
-    margin: 0 auto;
-    page-break-after: always;
-    /* Asegura que cada página comience en una nueva página */
-    background: white;
-    box-sizing: border-box;
-    position: relative;
+  background: white;
+  width: 210mm;
+  height: 297mm;
+  padding: 15mm;
+  box-sizing: border-box;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
+/* --- Botones de Acción (Volver, Imprimir) --- */
+.print-actions {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 100;
+}
+
+.btn-imprimir {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  background-color: #0d6efd; /* Azul Bootstrap */
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: background-color 0.2s;
+}
+.btn-imprimir:hover {
+  background-color: #0b5ed7;
+}
+.btn-imprimir:first-of-type {
+  background-color: #6c757d; /* Gris Bootstrap */
+}
+.btn-imprimir:first-of-type:hover {
+  background-color: #5c636a;
+}
+
+/* --- Encabezado del Informe --- */
 .header-print {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    margin-bottom: 10px;
-    /* Reducido para layout más compacto */
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .logo-print {
-    width: 70px;
+  width: 60px;
+  height: 60px;
 }
 
 .titulo-print {
-    margin: 0;
-    font-size: 24px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #003366; /* Un azul oscuro corporativo */
+  margin: 0;
 }
 
 .fecha-print {
-    font-size: 14px;
-    margin-top: 5px;
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin: 0;
 }
 
-/* Wrapper para mantener título + contenido juntos */
+/* --- Estilo de las Secciones (como tarjetas) --- */
 .section-wrapper {
-    page-break-inside: avoid;
-    /* Evita dividir la sección completa */
-    break-inside: avoid;
-    /* Sintaxis moderna */
-    display: block;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  overflow: hidden; /* Para que el fondo del título no se salga */
 }
 
 .section-title {
-    margin-top: 8px;
-    /* Espaciado compacto */
-    margin-bottom: 4px;
-    /* Espaciado compacto */
-    font-size: 18px;
-    border-bottom: 1px solid #333;
-    page-break-after: avoid;
-    /* Evita salto de página después del título */
-    break-after: avoid;
-    /* Sintaxis moderna */
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  background-color: #f8f9fa; /* Gris muy claro */
+  margin: 0;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .section-box {
-    padding: 6px 8px;
-    /* Padding más compacto */
-    font-size: 15px;
-    line-height: 1.3;
-    /* Interlineado más ajustado */
-    page-break-inside: avoid;
-    /* Evita dividir el contenido en dos páginas */
-    break-inside: avoid;
-    /* Sintaxis moderna */
+  padding: 12px;
+  font-size: 0.85rem;
 }
 
 .section-box p {
-    text-transform: uppercase;
-    white-space: pre-wrap;
-    /* Permite saltos de línea y espacios múltiples */
-    word-wrap: break-word;
-    /* Rompe palabras largas si es necesario */
-    overflow-wrap: break-word;
-    /* Alternativa moderna a word-wrap */
+  margin: 0 0 6px 0;
 }
 
-/* Grid de 2 columnas para campos */
 .section-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px 12px;
-    /* Espaciado más compacto */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 15px;
 }
 
-.section-grid p {
-    margin: 0;
-    padding: 1px 0;
-    /* Reducido para layout compacto */
-    line-height: 1.25;
-    /* Interlineado más compacto */
+.full-width {
+  grid-column: 1 / -1;
 }
 
-/* Clase para elementos que ocupan todo el ancho */
-.section-grid .full-width {
-    grid-column: 1 / -1;
-}
-
-
+/* --- Grilla de Imágenes --- */
 .imagenes-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    page-break-inside: avoid;
-    /* Mantiene las imágenes juntas */
-    break-inside: avoid;
-    /* Sintaxis moderna */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  padding: 10px;
 }
 
 .img-print {
-    width: 100%;
-    max-height: 230px;
-    object-fit: cover;
-    border: 1px solid #ccc;
+  width: 100%;
+  height: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  object-fit: cover;
 }
 
-.firma-final {
-    display: flex;
-    justify-content: flex-end;
-    align-items: flex-end;
+/* --- Firma --- */
+.firma-box {
+  margin-top: auto; /* Empuja la firma hacia abajo */
+  padding-top: 20px;
+  align-self: flex-end;
 }
 
 .firma-img {
-    width: 120px;
-    margin-bottom: 10px;
-}
-
-.print-actions {
-    position: sticky;
-    top: 0;
-    background: #fff;
-    padding: 10px;
-    text-align: right;
-    border-bottom: 1px solid #ccc;
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    z-index: 100;
-}
-
-.btn-imprimir {
-    padding: 8px 16px;
-    background: #0077cc;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s;
-}
-
-.btn-imprimir:hover {
-    background: #005fa3;
-}
-
-@media print {
-    .print-actions {
-        display: none !important;
-    }
-
-    .print-page {
-        padding: 5mm 8mm;
-        /* Márgenes reducidos en impresión para aprovechar más espacio */
-    }
-}
-
-/* ------------------------------------------- */
-/* CONTENEDOR GENERAL */
-/* ------------------------------------------- */
-.print-container {
-    width: 100%;
-    padding: 15px;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-    color: #000;
-}
-
-/* ------------------------------------------- */
-/* BLOQUE DE BOTÓN PARA IMPRIMIR */
-/* No aparece en el PDF */
-/* ------------------------------------------- */
-.no-print {
-    display: block;
-}
-
-.imprimir-barra {
-    padding: 10px 0;
-    border-bottom: 1px solid #ccc;
-    margin-bottom: 20px;
-}
-
-.no-print button {
-    padding: 8px 14px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-/* ------------------------------------------- */
-/* PÁGINAS */
-/* ------------------------------------------- */
-.pagina {
-    page-break-after: always;
-    break-after: page;
-}
-
-.pagina:last-child {
-    page-break-after: auto;
-}
-
-/* ------------------------------------------- */
-/* TITULO + LOGO + FECHA */
-/* ------------------------------------------- */
-.titulo-bloque {
-    text-align: center;
-    margin-bottom: 10px;
-    position: relative;
-}
-
-.logo-print {
-    width: 80px;
-    height: auto;
-    margin-bottom: 10px;
-}
-
-.titulo-bloque h1 {
-    font-size: 24px;
-    margin: 5px 0;
-}
-
-.fecha-impresion {
-    text-align: right;
-    font-size: 14px;
-    margin-top: 4px;
-}
-
-.btn-imprimir {
-    margin-top: 8px;
-    padding: 8px 16px;
-    background: #1e88e5;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.btn-imprimir:hover {
-    background: #1565c0;
-}
-
-
-/* ------------------------------------------- */
-/* CARDS */
-/* ------------------------------------------- */
-.card-print {
-    border: 1px solid #888;
-    padding: 10px;
-    margin-bottom: 12px;
-    border-radius: 6px;
-}
-
-.card-print h2 {
-    margin: 0 0 6px 0;
-    font-size: 18px;
-}
-
-/* ------------------------------------------- */
-/* UBICACIÓN */
-/* ------------------------------------------- */
-.ubicacion-print {
-    width: 100%;
-    max-width: 450px;
-    margin-top: 10px;
-}
-
-/* ------------------------------------------- */
-/* IMÁGENES FLEX-WRAP (OPCIÓN C) */
-/* ------------------------------------------- */
-.imagenes-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.imagen-item {
-    width: 30%;
-    min-width: 90px;
-    max-width: 180px;
-    aspect-ratio: 1/1;
-    border: 1px solid #aaa;
-    padding: 3px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.imagen-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* ------------------------------------------- */
-/* FIRMA DIGITAL */
-/* ------------------------------------------- */
-.firma-print {
-    margin-top: 30px;
-    text-align: center;
-}
-
-.firma-print img {
-    width: 220px;
-    height: auto;
-}
-
-/* ------------------------------------------- */
-/* IMPRESIÓN */
-/* ------------------------------------------- */
-@media print {
-
-    .no-print {
-        display: none !important;
-    }
-
-    body {
-        margin: 0;
-        padding: 0;
-    }
-}
-
-/* ------------------------------------------- */
-/* CONFIGURACIÓN DE PÁGINA A4 + FOOTER */
-/* ------------------------------------------- */
-/* @page {
-    size: A4;
-    margin: 5mm;
-
-    @bottom-center {
-        content: "ID: " attr(data-id) " — Página " counter(page) " de " counter(pages);
-        font-size: 11px;
-    }
-} */
-
-/* ------------------------------------------- */
-/* DEFINICIÓN DE COUNTERS */
-/* (esto permite poner el ID en el footer) */
-/* ------------------------------------------- */
-.print-container {
-    counter-reset: idInforme var(--idInforme);
-}
-
-/* Footer de página con ID */
-.page-footer {
-    display: none;
-    /* Oculto en vista normal */
-}
-
-@media print {
-    body {
-        margin: 0;
-        padding: 0;
-    }
-
-    .print-page {
-        height: 297mm !important;
-        /* Forzar altura completa de A4 al imprimir */
-        min-height: 297mm !important;
-        padding-bottom: 20mm !important;
-        /* Espacio para el footer */
-        position: relative !important;
-        /* Referencia para el footer absoluto */
-        margin: 0 !important;
-        page-break-after: always !important;
-        overflow: hidden;
-        /* Evita que contenido largo empuje el footer */
-    }
-
-    .page-footer {
-        display: block !important;
-        position: absolute;
-        /* Absoluto relativo a la página, no fijo a la ventana */
-        bottom: 10mm;
-        /* Margen desde el borde inferior de la hoja */
-        left: 0;
-        right: 0;
-        width: 100%;
-        text-align: center;
-        font-size: 11px;
-        font-weight: 600;
-        color: #000;
-        background-color: white;
-        padding: 5px 0;
-        border-top: 1px solid #333;
-        z-index: 100;
-    }
-
-    .no-print {
-        display: none !important;
-    }
+  width: 150px;
 }

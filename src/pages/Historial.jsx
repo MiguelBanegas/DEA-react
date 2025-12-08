@@ -161,7 +161,7 @@ const Historial = () => {
                             onClick={() => handleVerInforme(inf)}
                             title="Ver o Editar"
                             >
-                            <i className="bi bi-pencil-square"></i> Editar
+                            <i className="bi bi-pencil-square"></i>
                             </button>
                             <button 
                             className="btn btn-sm btn-danger"

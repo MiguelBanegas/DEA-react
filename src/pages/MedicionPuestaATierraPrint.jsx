@@ -19,6 +19,16 @@ export default function MedicionPuestaATierraPrint() {
     if (imgs) {
       setImagenes(JSON.parse(imgs));
     }
+
+    // Cambiar el título del documento para que lo use la ventana de impresión
+    const originalTitle = document.title;
+    if (id) {
+      document.title = `Informe PAT - ID: ${id}`;
+    }
+
+    // Restaurar el título original cuando el componente se desmonte
+    return () => { document.title = originalTitle; };
+
   }, []);
 
   if (!data) return <div>Cargando datos...</div>;
@@ -26,39 +36,33 @@ export default function MedicionPuestaATierraPrint() {
   // Separar observaciones por si son largas
   const obsLargas = data.observaciones && data.observaciones.length > 350;
 
-  // Dividir imágenes en grupos de 3 por página
-  const gruposImagenes = [];
-  for (let i = 0; i < imagenes.length; i += 3) {
-    gruposImagenes.push(imagenes.slice(i, i + 3));
-  }
-
-  // Calcular número total de páginas
-  const totalPaginas = 1 + (obsLargas ? 1 : 0) + gruposImagenes.length;
+  const hayImagenes = imagenes && imagenes.length > 0;
 
   const FirmaSection = () => (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '30px', paddingRight: '10px' }}>
-       <div className="firma-box">
-          <img src="/img/FIRMADIGITAL.png" alt="Firma" className="firma-img" />
-       </div>
-    </div>
-  );
-
-  // Componente de footer para cada página
-  const PageFooter = ({ pageNum }) => (
-    <div className="page-footer">
-      <strong>ID: {data.idInformePAT}</strong> | Página {pageNum} de {totalPaginas}
+    <div className="firma-box">
+      <img src="/img/FIRMADIGITAL.png" alt="Firma" className="firma-img" />
     </div>
   );
 
   return (
     <>
-    <div className="print-actions">
+    <div className="print-actions no-print">
       <button 
           className="btn-imprimir"
           onClick={() => window.history.back()}>
           Volver
       </button>
-      <button onClick={() => window.print()} className="btn-imprimir">
+      <button 
+        onClick={() => {
+          // Nos aseguramos de que el título esté actualizado antes de imprimir
+          const id = localStorage.getItem("idInformePAT");
+          if (id) {
+            document.title = `Informe PAT - ID: ${id}`;
+          }
+          // Un pequeño retardo ayuda al navegador a procesar el cambio de título
+          setTimeout(() => window.print(), 50);
+        }} 
+        className="btn-imprimir">
         Imprimir
       </button>
     </div>
@@ -119,9 +123,9 @@ export default function MedicionPuestaATierraPrint() {
         <div className="section-wrapper">
           <h2 className="section-title">Datos de la Medición</h2>
           <div className="section-box section-grid">
-            <p><strong>Fecha:</strong> {data.fechaMedicion}</p>
+            <p className="full-width"><strong>Fecha:</strong> {new Date(data.fechaMedicion + 'T00:00:00').toLocaleDateString('es-AR')}</p>
             <p><strong>Hora Inicio:</strong> {data.horaInicio}</p>
-            <p className="full-width"><strong>Hora Fin:</strong> {data.horaFin}</p>
+            <p><strong>Hora Fin:</strong> {data.horaFin}</p>
           </div>
         </div>
 
@@ -141,8 +145,7 @@ export default function MedicionPuestaATierraPrint() {
             </div>
           </div>
         )}
-        {!obsLargas && gruposImagenes.length === 0 && <FirmaSection />}
-        <PageFooter pageNum={1} />
+        {!obsLargas && !hayImagenes && <FirmaSection />}
       </div>
 
       {/* ====================== PÁGINA 2 (OBSERVACIONES LARGAS) ====================== */}
@@ -154,28 +157,26 @@ export default function MedicionPuestaATierraPrint() {
               <p>{data.observaciones}</p>
             </div>
           </div>
-          {gruposImagenes.length === 0 && <FirmaSection />}
-          <PageFooter pageNum={2} />
+          {!hayImagenes && <FirmaSection />}
         </div>
       )}
 
-      {/* ====================== IMÁGENES (3 POR PÁGINA) ====================== */}
-      {gruposImagenes.map((grupo, index) => (
-        <div key={index} className="print-page">
-          <div className="section-wrapper">
-            <h2 className="section-title">Documentación Adjunta</h2>
-            <div className="imagenes-grid">
-              {grupo.map((img, i) => (
-                <img key={i} src={img} alt={`Foto ${i}`} className="img-print" />
-              ))}
+      {/* ====================== PÁGINA DE IMÁGENES ====================== */}
+      {hayImagenes && (
+        <div className="print-page">
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div className="section-wrapper">
+              <h2 className="section-title">Documentación Adjunta</h2>
+              <div className="imagenes-grid">
+                {imagenes.map((img, i) => (
+                  <img key={i} src={img} alt={`Foto ${i}`} className="img-print" />
+                ))}
+              </div>
             </div>
+            <FirmaSection />
           </div>
-          {index === gruposImagenes.length - 1 && <FirmaSection />}
-          <PageFooter pageNum={obsLargas ? 3 : 2 + index} />
         </div>
-      ))}
-
-
+      )}
 
     </div>
     </>
