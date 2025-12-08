@@ -49,8 +49,8 @@ const MedicionPuestaATierra = () => {
     cumpleIec: "si",
     certificadoFabricante: "si",
     condicionesUso: "si",
-    fechaMedicion: "",
-    horaInicio: "",
+    fechaMedicion: new Date().toISOString().split("T")[0],
+    horaInicio: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }),
     horaFin: "",
     metodologia: "",
     observaciones: "",
@@ -169,24 +169,38 @@ const MedicionPuestaATierra = () => {
   };
 
   const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      });
+    toast.loading(`Procesando ${files.length} imágen(es)...`, { id: 'compressing' });
 
-      const reader = new FileReader();
-      reader.readAsDataURL(compressed);
-      reader.onloadend = () => {
-        setImagenesAdjuntas((prev) => [...prev, { file: compressed, preview: reader.result }]);
-      };
-    } catch (err) {
-      console.error("Error imagen:", err);
-    }
+    const promises = Array.from(files).map(async (file) => {
+      try {
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        });
+        
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(compressed);
+          reader.onloadend = () => {
+            resolve({ file: compressed, preview: reader.result });
+          };
+        });
+
+      } catch (err) {
+        console.error("Error comprimiendo imagen:", err);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(promises);
+    const validResults = results.filter(Boolean); // Filtrar los nulos por si hubo errores
+
+    setImagenesAdjuntas((prev) => [...prev, ...validResults]);
+    toast.success(`${validResults.length} imágen(es) adjuntada(s).`, { id: 'compressing' });
   };
 
   const handleDeleteImage = async (index) => {
@@ -551,7 +565,7 @@ const MedicionPuestaATierra = () => {
       certificadoFabricante: "si",
       condicionesUso: "si",
       fechaMedicion: new Date().toISOString().split("T")[0],
-      horaInicio: "",
+      horaInicio: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }),
       horaFin: "",
       metodologia: "",
       observaciones: "",
@@ -1014,17 +1028,17 @@ return (
 
                     {/* BOTONES MAPA + IMAGEN */}
                     <div className="col-md-9 no-print-pdf">
-                      <div className="d-flex gap-2 align-items-end">
-
+                      <div className="d-flex flex-column gap-3">
+                        
                         <div>
-                          <label className="form-label small mb-0">Ubicación</label>
+                          <label className="form-label small mb-1">Ubicación</label>
                           <div className="d-flex gap-2">
                             <button
                               type="button"
                               className="btn btn-secondary btn-sm"
                               onClick={generarImagenMapa}
                             >
-                              Obtener Ubicación
+                              <i className="bi bi-geo-alt-fill me-1"></i> Obtener Ubicación
                             </button>
 
                             <button
@@ -1033,17 +1047,21 @@ return (
                               data-bs-toggle="modal"
                               data-bs-target="#modalMapa"
                             >
-                              Mapa Manual
+                              <i className="bi bi-map me-1"></i> Mapa Manual
                             </button>
                           </div>
                         </div>
 
                         <div>
-                          <label className="form-label small mb-0">Adjuntar Imagen</label>
+                          <label htmlFor="upload-input" className="btn btn-outline-primary btn-sm">
+                            <i className="bi bi-paperclip me-1"></i> Adjuntar Archivo(s)
+                          </label>
                           <input
+                            id="upload-input"
                             type="file"
                             accept="image/*"
-                            className="form-control form-control-sm"
+                            multiple
+                            className="d-none"
                             onChange={handleImageUpload}
                           />
                         </div>
