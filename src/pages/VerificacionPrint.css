@@ -1,169 +1,147 @@
-/* ================================================ */
-/*      ESTILOS PARA LA VISTA DE IMPRESIÓN (VERIFICACION) */
-/* ================================================ */
+/* General Print Setup */
+body {
+  -webkit-print-color-adjust: exact !important;
+  color-adjust: exact !important;
+}
 
 @media print {
-  body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-    background-color: #fff;
-  }
   .no-print {
     display: none !important;
   }
-  .print-actions {
-    display: none;
+  .print-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
   .print-page {
-    box-shadow: none;
-    margin: 0;
-    border: none;
-  }
-  .break-before {
-    page-break-before: always;
+    page-break-after: always;
+    width: 100%;
+    height: 99%; /* Avoid extra blank pages */
   }
 }
 
-body {
-  background-color: #e9ecef;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #212529;
+/* Make this a flex container to push footer down */
+.print-page-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 98vh; /* Full page height */
 }
 
-.print-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  padding: 20px 0;
+.print-content {
+    flex-grow: 1; /* Content grows to push footer */
 }
 
-.print-page {
-  background: white;
-  width: 210mm;
-  padding: 15mm;
-  box-sizing: border-box;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  page-break-after: avoid; 
+.print-footer {
+    flex-shrink: 0; /* Footer doesn't shrink */
 }
 
-.print-actions {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  display: flex;
-  gap: 10px;
-  z-index: 100;
-}
 
-.btn-imprimir {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 5px;
-  background-color: #0d6efd;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  transition: background-color 0.2s;
-}
-.btn-imprimir:hover {
-  background-color: #0b5ed7;
-}
-.btn-imprimir:first-of-type {
-  background-color: #6c757d;
-}
-.btn-imprimir:first-of-type:hover {
-  background-color: #5c636a;
+.uppercase-print {
+  text-transform: uppercase;
 }
 
 .header-print {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 20px;
-  border-bottom: 2px solid #dee2e6;
+  border-bottom: 2px solid #333;
   padding-bottom: 10px;
   margin-bottom: 20px;
 }
 
 .logo-print {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
+  max-height: 70px;
 }
 
 .titulo-print {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: #003366;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: right;
   margin: 0;
 }
 
 .fecha-print {
-  font-size: 0.8rem;
-  color: #6c757d;
-  margin: 0;
+    text-align: right;
+    font-size: 12px;
 }
 
 .section-wrapper {
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
   margin-bottom: 15px;
-  overflow: hidden;
   page-break-inside: avoid;
 }
 
 .section-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 8px 12px;
-  background-color: #f8f9fa;
-  margin: 0;
-  border-bottom: 1px solid #dee2e6;
+  font-size: 16px;
+  font-weight: bold;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
 }
 
 .section-box {
-  padding: 12px;
-  font-size: 0.85rem;
-}
-
-.section-box p {
-  margin: 0 0 6px 0;
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 5px;
 }
 
 .section-grid-print {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px 15px;
+  gap: 10px;
 }
 
+.section-grid-print p {
+  margin: 0;
+}
+
+.break-before {
+  page-break-before: always;
+}
+
+/* Image Grid Styling */
 .imagenes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, 1fr); /* 2 images per row */
   gap: 15px;
-  padding: 10px;
+  page-break-inside: auto;
 }
 
 .img-print {
   width: 100%;
+  max-width: 300px; /* USER REQUEST: Make images smaller */
   height: auto;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
   object-fit: cover;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin: 0 auto; /* Center image in grid cell */
+  display: block;
 }
 
-/* --- Firma --- */
+/* Signature Styling */
 .firma-box {
-  margin-top: auto;
-  padding-top: 20px;
-  align-self: flex-end;
+  text-align: right;
+  margin-top: 50px;
+  page-break-inside: avoid;
 }
 
 .firma-img {
-  width: 150px;
+  width: 200px;
 }
 
-/* --- Uppercase for Print --- */
-.uppercase-print {
-  text-transform: uppercase;
+/* Print action buttons */
+.print-actions {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+}
+.btn-imprimir {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
 }

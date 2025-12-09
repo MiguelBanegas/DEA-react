@@ -1,28 +1,42 @@
 import React from 'react';
 
-export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
+const tooltips = {
+  numeroToma: "N° de toma de tierra: Indicar mediante un número la toma a tierra donde se realiza la medición, el cual deberá coincidir con el del plano o croquis que se adjunta a la medición.",
+  sector: "Sector: Indicar el sector o la sección dentro de la empresa donde se realiza la medición.",
+  descripcionTerreno: "Descripción del terreno: Indicar o describir la condición del terreno al momento de la medición (lecho seco, arenoso seco o húmedo, lluvias recientes, turba, limo, pantanoso, etc.).",
+  usoPuestaTierra: "Uso de la puesta a tierra: Indicar el uso habitual, como puesta a tierra del neutro de transformador, seguridad de masas, protección de equipos electrónicos, informática, iluminación, pararrayos, otros.",
+  esquemaConexion: "Esquema de conexión a tierra: Indicar cuál es el esquema utilizado (TT / TN-S / TN-C / TN-C-S / IT).",
+  valorResistencia: "Valor obtenido (Ω): Indicar el valor en Ohm obtenido en la medición de resistencia de puesta a tierra de las masas.",
+  cumple: "Cumple con reglamentación: Indicar si el resultado cumple con la Reglamentación de la Asociación Argentina de Electrotécnicos para instalaciones eléctricas en inmuebles.",
+  continuidad: "Continuidad del circuito: Indicar si el circuito de puesta a tierra es continuo y permanente.",
+  capacidadCarga: "Capacidad de conducir corriente de falla: Indicar si el circuito tiene capacidad de carga y resistencia adecuada para conducir la corriente de falla.",
+  proteccionContactos: "Protección contra contactos indirectos: Indicar si se usa DD (diferencial), IA (interruptor automático) o FUS (fusible).",
+  desconexionAutomatica: "Desconexión automática: Indicar si el dispositivo de protección puede desconectar automáticamente el circuito dentro de los tiempos establecidos por la normativa."
+};
+
+export default function TablaMedicion({ filas, onFilaChange, onFilaDelete, onInputFocus, onInputBlur }) {
 
   return (
     <div className="table-responsive">
       <table id="medicionTabla" className="table table-bordered table-striped align-middle text-center">
         <thead className="table-dark">
           <tr>
-            <th rowSpan="2" data-tooltip-align="left" data-tooltip="N° de toma de tierra: Indicar mediante un número la toma a tierra donde se realiza la medición, el cual deberá coincidir con el del plano o croquis que se adjunta a la medición.">(22)</th>
-            <th rowSpan="2" data-tooltip-align="left" data-tooltip="Sector: Indicar el sector o la sección dentro de la empresa donde se realiza la medición.">(23)</th>
-            <th rowSpan="2" data-tooltip-align="left" data-tooltip="Descripción del terreno: Indicar o describir la condición del terreno al momento de la medición (lecho seco, arenoso seco o húmedo, lluvias recientes, turba, limo, pantanoso, etc.).">(24)</th>
-            <th rowSpan="2" data-tooltip-align="center" data-tooltip="Uso de la puesta a tierra: Indicar el uso habitual, como puesta a tierra del neutro de transformador, seguridad de masas, protección de equipos electrónicos, informática, iluminación, pararrayos, otros.">(25)</th>
-            <th rowSpan="2" data-tooltip-align="center" data-tooltip="Esquema de conexión a tierra: Indicar cuál es el esquema utilizado (TT / TN-S / TN-C / TN-C-S / IT).">(26)</th>
-            <th colSpan="2" data-tooltip-align="center" data-tooltip="Valor obtenido y cumplimiento de la reglamentación">(27)-(28)</th>
-            <th colSpan="2" data-tooltip-align="center" data-tooltip="Continuidad y capacidad de conducción">(29)-(30)</th>
-            <th rowSpan="2" data-tooltip-align="right" data-tooltip="Protección contra contactos indirectos: Indicar si se usa DD (diferencial), IA (interruptor automático) o FUS (fusible).">(31)</th>
-            <th rowSpan="2" data-tooltip-align="right" data-tooltip="Desconexión automática: Indicar si el dispositivo de protección puede desconectar automáticamente el circuito dentro de los tiempos establecidos por la normativa.">(32)</th>
+            <th rowSpan="2">(22)</th>
+            <th rowSpan="2">(23)</th>
+            <th rowSpan="2">(24)</th>
+            <th rowSpan="2">(25)</th>
+            <th rowSpan="2">(26)</th>
+            <th colSpan="2">(27)-(28)</th>
+            <th colSpan="2">(29)-(30)</th>
+            <th rowSpan="2">(31)</th>
+            <th rowSpan="2">(32)</th>
             <th rowSpan="2" style={{width: '80px'}} className="no-print-pdf">Acciones</th>
           </tr>
           <tr>
-            <th data-tooltip-align="center" data-tooltip="Valor obtenido (Ω): Indicar el valor en Ohm obtenido en la medición de resistencia de puesta a tierra de las masas.">(27)</th>
-            <th data-tooltip-align="center" data-tooltip="Cumple con reglamentación: Indicar si el resultado cumple con la Reglamentación de la Asociación Argentina de Electrotécnicos para instalaciones eléctricas en inmuebles.">(28)</th>
-            <th data-tooltip-align="center" data-tooltip="Continuidad del circuito: Indicar si el circuito de puesta a tierra es continuo y permanente.">(29)</th>
-            <th data-tooltip-align="center" data-tooltip="Capacidad de conducir corriente de falla: Indicar si el circuito tiene capacidad de carga y resistencia adecuada para conducir la corriente de falla.">(30)</th>
+            <th>(27)</th>
+            <th>(28)</th>
+            <th>(29)</th>
+            <th>(30)</th>
           </tr>
         </thead>
         <tbody>
@@ -33,7 +47,9 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   type="number" 
                   className="form-control form-control-sm input-compact"
                   value={fila.numeroToma || ''} 
-                  onChange={(e) => onFilaChange(index, 'numeroToma', e.target.value)} 
+                  onChange={(e) => onFilaChange(index, 'numeroToma', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.numeroToma)}
+                  onBlur={onInputBlur}
                 />
               </td>
               <td>
@@ -41,7 +57,9 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   type="text" 
                   className="form-control form-control-sm input-compact"
                   value={fila.sector || ''} 
-                  onChange={(e) => onFilaChange(index, 'sector', e.target.value)} 
+                  onChange={(e) => onFilaChange(index, 'sector', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.sector)}
+                  onBlur={onInputBlur}
                 />
               </td>
               <td>
@@ -49,6 +67,8 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   className="form-select form-select-sm input-compact"
                   value={fila.descripcionTerreno || ''} 
                   onChange={(e) => onFilaChange(index, 'descripcionTerreno', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.descripcionTerreno)}
+                  onBlur={onInputBlur}
                 >
                   <option value="">Sel.</option>
                   <option value="Lecho seco">Lecho seco</option>
@@ -66,6 +86,8 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   className="form-select form-select-sm input-compact"
                   value={fila.usoPuestaTierra || ''} 
                   onChange={(e) => onFilaChange(index, 'usoPuestaTierra', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.usoPuestaTierra)}
+                  onBlur={onInputBlur}
                 >
                   <option value="">Sel.</option>
                   <option value="Neutro de transformador">Neutro de transformador</option>
@@ -82,6 +104,8 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   className="form-select form-select-sm input-compact"
                   value={fila.esquemaConexion || ''} 
                   onChange={(e) => onFilaChange(index, 'esquemaConexion', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.esquemaConexion)}
+                  onBlur={onInputBlur}
                 >
                   <option value="">Sel.</option>
                   <option value="TT">TT</option>
@@ -96,7 +120,9 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   type="number" 
                   className="form-control form-control-sm input-compact"
                   value={fila.valorResistencia || ''} 
-                  onChange={(e) => onFilaChange(index, 'valorResistencia', e.target.value)} 
+                  onChange={(e) => onFilaChange(index, 'valorResistencia', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.valorResistencia)}
+                  onBlur={onInputBlur}
                 />
               </td>
               <td>
@@ -104,6 +130,8 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   className="form-select form-select-sm input-compact"
                   value={fila.cumple || ''} 
                   onChange={(e) => onFilaChange(index, 'cumple', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.cumple)}
+                  onBlur={onInputBlur}
                 >
                   <option value="">Sel.</option>
                   <option value="SI">SI</option>
@@ -115,6 +143,8 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   className="form-select form-select-sm input-compact"
                   value={fila.continuidad || ''} 
                   onChange={(e) => onFilaChange(index, 'continuidad', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.continuidad)}
+                  onBlur={onInputBlur}
                 >
                   <option value="">Sel.</option>
                   <option value="SI">SI</option>
@@ -126,6 +156,8 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   className="form-select form-select-sm input-compact"
                   value={fila.capacidadCarga || ''} 
                   onChange={(e) => onFilaChange(index, 'capacidadCarga', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.capacidadCarga)}
+                  onBlur={onInputBlur}
                 >
                   <option value="">Sel.</option>
                   <option value="SI">SI</option>
@@ -137,6 +169,8 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   className="form-select form-select-sm input-compact"
                   value={fila.proteccionContactos || ''} 
                   onChange={(e) => onFilaChange(index, 'proteccionContactos', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.proteccionContactos)}
+                  onBlur={onInputBlur}
                 >
                   <option value="">Sel.</option>
                   <option value="DD">DD</option>
@@ -149,6 +183,8 @@ export default function TablaMedicion({ filas, onFilaChange, onFilaDelete }) {
                   className="form-select form-select-sm input-compact"
                   value={fila.desconexionAutomatica || ''} 
                   onChange={(e) => onFilaChange(index, 'desconexionAutomatica', e.target.value)}
+                  onFocus={(e) => onInputFocus(e, tooltips.desconexionAutomatica)}
+                  onBlur={onInputBlur}
                 >
                   <option value="">Sel.</option>
                   <option value="SI">SI</option>
