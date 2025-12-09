@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import html2pdf from "html2pdf.js";
+import { useLocation, useNavigate } from "react-router-dom";
+import imageCompression from "browser-image-compression";
+import toast from 'react-hot-toast';
+import { confirmar } from '../utils/confirmationToast';
 import Navbar from "../components/Navbar";
 import TablaMedicion from "../components/TablaMedicion";
 import { usePlanillas } from "../hooks/usePlanillas";
 import "./Verificacion.css";
 
 const Verificacion = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     cliente: "",
     direccion: "",
@@ -22,68 +25,83 @@ const Verificacion = () => {
     responsableHsma: "",
     matriculaHsma: "",
     acompanhaHsma: "",
-    horaInicio: "",
+    horaInicio: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }),
     horaFin: "",
   });
 
   const [filas, setFilas] = useState([
     { id: Date.now(), numeroToma: '', sector: '', descripcionTerreno: '', usoPuestaTierra: '', esquemaConexion: '', valorResistencia: '', cumple: '', continuidad: '', capacidadCarga: '', proteccionContactos: '', desconexionAutomatica: '' }
   ]);
-  const [seleccionados, setSeleccionados] = useState([]);
+  const [imagenesAdjuntas, setImagenesAdjuntas] = useState([]);
+  const [imagenesCargando, setImagenesCargando] = useState(false);
+  const [deletedFiles, setDeletedFiles] = useState([]);
+
   const { saveOrUpdateLocalPlanilla } = usePlanillas();
   const location = useLocation();
   const [informeId, setInformeId] = useState(null);
 
+  // Genera un ID temporal para informes nuevos, asegurando que cada uno sea único
+  const generarIdTemporal = () => `VERIF-${Date.now()}`;
+
   useEffect(() => {
-    // Check if data was passed via navigation (from Historial)
+    // Si viene desde historial, cargar los datos
     if (location.state && location.state.datosCargados) {
       const datos = location.state.datosCargados;
       const id = location.state.localId;
-      console.log("Cargando datos desde historial:", datos);
       
-      if(id) {
-        setInformeId(id);
-      }
+      setInformeId(id);
       
       // Cargar formData
       const newFormData = { ...formData };
       Object.keys(newFormData).forEach(key => {
-        if (datos[key] !== undefined) {
-          newFormData[key] = datos[key];
-        }
+        if (datos[key] !== undefined) newFormData[key] = datos[key];
       });
       setFormData(newFormData);
 
-      // Cargar filas si existen
+      // Cargar filas
       if (datos.filas && Array.isArray(datos.filas)) {
         setFilas(datos.filas);
       }
+
+      // Cargar imágenes
+      const imagenesDesdeEstado = location.state.imagenes || [];
+      const urlsDesdeMeta = datos.images || [];
+
+      const procesarFiles = async (files) => {
+        setImagenesCargando(true);
+        const promises = files.map(file => new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve({ file, preview: e.target.result });
+          reader.readAsDataURL(file);
+        }));
+        const processed = await Promise.all(promises);
+        setImagenesAdjuntas(processed);
+        setImagenesCargando(false);
+      };
+
+      const procesarUrls = (urlObjects) => {
+        const mapped = urlObjects.map(imgObj => ({
+          file: null,
+          preview: imgObj.url
+        }));
+        setImagenesAdjuntas(mapped);
+      };
+
+      if (imagenesDesdeEstado.length > 0) {
+        procesarFiles(imagenesDesdeEstado);
+      } else if (urlsDesdeMeta.length > 0) {
+        procesarUrls(urlsDesdeMeta);
+      }
       
-      // Limpiar el estado de navegación para no recargar al refrescar
       window.history.replaceState({}, document.title);
       return;
     }
 
-    // Load saved data from localStorage
-    const savedData = localStorage.getItem('verificacionFormData');
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        setFormData(parsedData);
-      } catch (error) {
-        console.error('Error loading saved data:', error);
-      }
-    } else {
-      // Set today's date if no saved data
-      const today = new Date().toISOString().split("T")[0];
-      setFormData((prevData) => ({ ...prevData, fecha: today }));
-    }
-  }, [location.state]);
+    // Si es un informe nuevo, limpiar todo y generar un ID temporal
+    limpiarDatos(true);
 
-  useEffect(() => {
-    // Save formData to localStorage whenever it changes
-    localStorage.setItem('verificacionFormData', JSON.stringify(formData));
-  }, [formData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -91,6 +109,65 @@ const Verificacion = () => {
       ...prevData,
       [name]: value,
     }));
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    toast.loading(`Procesando ${files.length} imágen(es)...`, { id: 'compressing' });
+
+    const promises = Array.from(files).map(async (file) => {
+      try {
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        });
+        
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(compressed);
+          reader.onloadend = () => {
+            resolve({ file: compressed, preview: reader.result });
+          };
+        });
+
+      } catch (err) {
+        console.error("Error comprimiendo imagen:", err);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(promises);
+    const validResults = results.filter(Boolean);
+
+    setImagenesAdjuntas((prev) => [...prev, ...validResults]);
+    toast.success(`${validResults.length} imágen(es) adjuntada(s).`, { id: 'compressing' });
+  };
+
+  const handleDeleteImage = async (index) => {
+      if (!await confirmar("¿Borrar imagen?", "Esta imagen se quitará del informe al guardar.")) return;
+      
+      setImagenesAdjuntas(prev => {
+          const newImgs = [...prev];
+          const deletedImg = newImgs[index];
+          
+          let deletedUrl = null;
+          if (deletedImg && deletedImg.preview) {
+              deletedUrl = deletedImg.preview;
+          }
+          
+          if (deletedUrl && deletedUrl.includes('uploads/')) {
+              const filename = deletedUrl.split('/').pop();
+              if (filename) {
+                  setDeletedFiles(curr => [...curr, filename]);
+              }
+          }
+
+          newImgs.splice(index, 1);
+          return newImgs;
+      });
   };
 
   const agregarFila = () => {
@@ -107,142 +184,25 @@ const Verificacion = () => {
     setFilas(nuevasFilas);
   };
 
-  const handleSeleccionChange = (id) => {
-    if (seleccionados.includes(id)) {
-      setSeleccionados(seleccionados.filter(sId => sId !== id));
-    } else {
-      setSeleccionados([...seleccionados, id]);
+  const handleFilaDelete = (id) => {
+    if (window.confirm('¿Estás seguro de eliminar esta fila?')) {
+      setFilas(filas.filter(fila => fila.id !== id));
     }
   };
 
-  const eliminarFilasSeleccionadas = () => {
-    if (window.confirm('¿Estás seguro de eliminar las filas seleccionadas?')) {
-      setFilas(filas.filter(fila => !seleccionados.includes(fila.id)));
-      setSeleccionados([]);
-    }
+  const handlePrintPreview = () => {
+    // Guardar los datos necesarios para la impresión en localStorage
+    localStorage.setItem('verificacionFormData', JSON.stringify(formData));
+    localStorage.setItem('verificacionFilas', JSON.stringify(filas));
+    localStorage.setItem('verificacionId', informeId);
+    
+    const imagenesBase64 = imagenesAdjuntas.map(img => img.preview);
+    localStorage.setItem('verificacionImagenes', JSON.stringify(imagenesBase64));
+    
+    navigate("/verificacion-print");
   };
 
-  const guardarComoPDF = () => {
-    // DEBUG: Mostrar datos antes de generar PDF
-    console.log('=== DATOS ANTES DE GENERAR PDF ===');
-    console.log('formData:', formData);
-    console.log('filas:', filas);
-    console.log('Valores de inputs en DOM:');
-    document.querySelectorAll('.pdf-uppercase').forEach((input, i) => {
-      console.log(`Input ${i} (${input.name}):`, input.value);
-    });
-    console.log('===================================');
-    
-    const element = document.getElementById("exportPDF");
-    
-    // Ocultar elementos que no queremos en el PDF (como los checkboxes de selección)
-    const noPrintElements = document.querySelectorAll('.no-print-pdf');
-    noPrintElements.forEach(el => el.style.display = 'none');
-
-    // Mostrar fecha solo para PDF
-    const dateElement = document.getElementById('pdfDate');
-    if (dateElement) dateElement.style.display = 'block';
-
-    // Agregar clase para estilos específicos de PDF
-    element.classList.add('pdf-export');
-
-    // Reemplazar inputs con spans para mejor renderizado en PDF
-    const allInputs = element.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], input[type="time"], select');
-    const inputReplacements = [];
-    
-    allInputs.forEach((input) => {
-      if (input.type === 'checkbox' || input.type === 'radio') return;
-      
-      const span = document.createElement('span');
-      span.className = input.className;
-      span.style.cssText = window.getComputedStyle(input).cssText;
-      span.style.display = 'inline-block';
-      span.style.minHeight = '20px';
-      
-      let displayValue = input.value;
-      
-      // Para selects, obtener el texto de la opción seleccionada
-      if (input.tagName === 'SELECT') {
-        const selectedOption = input.options[input.selectedIndex];
-        displayValue = selectedOption ? selectedOption.text : '';
-      }
-      
-      // Aplicar uppercase si tiene la clase pdf-uppercase
-      if (input.classList.contains('pdf-uppercase')) {
-        displayValue = displayValue.toUpperCase();
-      }
-      
-      span.textContent = displayValue || '\u00A0'; // \u00A0 es un espacio no rompible
-      
-      inputReplacements.push({
-        original: input,
-        replacement: span,
-        parent: input.parentNode
-      });
-      
-      input.parentNode.replaceChild(span, input);
-    });
-
-    const opt = {
-      margin: [2, 2, 2, 2],
-      filename: `Verificacion_${formData.cliente || 'SinNombre'}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true,
-        letterRendering: true,
-        logging: false
-      },
-      jsPDF: { 
-        unit: "mm", 
-        format: "a4", 
-        orientation: "portrait" 
-      },
-      pagebreak: { 
-        mode: ['avoid-all', 'css', 'legacy'],
-        before: '.page-break-before',
-        after: '.page-break-after',
-        avoid: '.no-page-break'
-      }
-    };
-
-    const worker = html2pdf().set(opt).from(element);
-    
-    worker.toPdf().get('pdf').then(function(pdf) {
-      const totalPages = pdf.internal.getNumberOfPages();
-      
-      // Agregar número de página a cada página
-      for (let i = 1; i <= totalPages; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(9);
-        pdf.setTextColor(100);
-        pdf.text(
-          `Página ${i} de ${totalPages}`,
-          pdf.internal.pageSize.getWidth() / 2,
-          pdf.internal.pageSize.getHeight() - 3,
-          { align: 'center' }
-        );
-      }
-    }).save().then(() => {
-       // Restaurar inputs originales
-       inputReplacements.forEach(({ original, replacement, parent }) => {
-         parent.replaceChild(original, replacement);
-       });
-       
-       // Restaurar visibilidad
-       noPrintElements.forEach(el => el.style.display = '');
-       if (dateElement) dateElement.style.display = 'none';
-       element.classList.remove('pdf-export');
-       
-       // Limpiar datos después de generar PDF
-       if (window.confirm('PDF generado. ¿Desea limpiar los datos del formulario?')) {
-         limpiarDatos();
-       }
-    });
-  };
-
-  const limpiarDatos = () => {
-    // Limpiar formData
+  const limpiarDatos = (generarNuevoId = false) => {
     setFormData({
       cliente: "",
       direccion: "",
@@ -258,38 +218,64 @@ const Verificacion = () => {
       responsableHsma: "",
       matriculaHsma: "",
       acompanhaHsma: "",
-      horaInicio: "",
+      horaInicio: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }),
       horaFin: "",
     });
     
-    // Limpiar filas de la tabla
     setFilas([
       { id: Date.now(), numeroToma: '', sector: '', descripcionTerreno: '', usoPuestaTierra: '', esquemaConexion: '', valorResistencia: '', cumple: '', continuidad: '', capacidadCarga: '', proteccionContactos: '', desconexionAutomatica: '' }
     ]);
     
-    // Limpiar seleccionados
-    setSeleccionados([]);
+    setImagenesAdjuntas([]);
+    setDeletedFiles([]);
     
-    // Limpiar localStorage
-    localStorage.removeItem('verificacionFormData');
+    localStorage.removeItem('verificacionFormData'); // For print legacy
+    localStorage.removeItem('verificacionFilas');
+
+    if (generarNuevoId) {
+      setInformeId(generarIdTemporal());
+    } else {
+      setInformeId(null);
+    }
   };
 
   const guardarEnFirebase = async () => {
     if (!window.confirm('¿Desea guardar el informe en la base de datos?')) return;
 
     try {
+      const newFiles = imagenesAdjuntas.filter(i => i.file).map(i => i.file);
+      const existingUrls = imagenesAdjuntas.filter(i => !i.file).map(i => i.preview);
+
       const meta = {
         ...formData,
         filas,
         tipo: 'verificacion',
-        fechaCreacion: new Date().toISOString()
+        fechaCreacion: new Date().toISOString(),
+        images: existingUrls,
       };
       
-      await saveOrUpdateLocalPlanilla(meta, [], informeId);
-      alert('Informe guardado correctamente en la base de datos.');
+      const result = await saveOrUpdateLocalPlanilla(meta, newFiles, informeId);
+
+      if (result.remoteId) {
+        setInformeId(result.remoteId);
+        
+        if (result.planilla && result.planilla.images) {
+            const nuevasImgs = result.planilla.images.map(url => ({ file: null, preview: url }));
+            setImagenesAdjuntas(nuevasImgs);
+        }
+
+        // Logic to delete orphaned files on the server can be added here if needed
+        // For now, we just clear the local list.
+        setDeletedFiles([]);
+
+        toast.success(`Informe guardado EXITOSAMENTE.\nID: ${result.remoteId}`, { duration: 4000 });
+      } else {
+        toast("Guardado LOCALMENTE (Offline).\nSe sincronizará al conectar.", { icon: '⚠️', duration: 5000 });
+      }
+
     } catch (error) {
       console.error('Error al guardar:', error);
-      alert('Error al guardar el informe: ' + error.message);
+      toast.error('Error al guardar el informe: ' + error.message);
     }
   };
 
@@ -519,20 +505,80 @@ const Verificacion = () => {
             </div>
           </div>
 
+          {/* DOCUMENTACIÓN ADJUNTA */}
+          <div className="card mb-3 no-print-pdf">
+            <div className="card-header bg-light py-2 px-3 fw-bold">
+              Documentación Adjunta (Fotos)
+            </div>
+            <div className="card-body py-2 px-3">
+              <div>
+                <label htmlFor="upload-input" className="btn btn-outline-primary btn-sm">
+                  <i className="bi bi-paperclip me-1"></i> Adjuntar Archivo(s)
+                </label>
+                <input
+                  id="upload-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="d-none"
+                  onChange={handleImageUpload}
+                />
+              </div>
+
+              {/* PREVIEW IMÁGENES */}
+              {imagenesAdjuntas.length > 0 && (
+                <div className="mt-3">
+                  <div className="d-flex flex-wrap gap-2">
+                    {imagenesAdjuntas.map((img, idx) => (
+                      <div key={idx} style={{ position: 'relative' }}>
+                          <img
+                            src={img.preview}
+                            alt="Adjunto"
+                            style={{
+                              width: "100px",
+                              height: "100px",
+                              objectFit: "cover",
+                            }}
+                            className="img-thumbnail"
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm p-0 d-flex justify-content-center align-items-center"
+                            style={{
+                                position: 'absolute',
+                                top: '-5px',
+                                right: '-5px',
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                fontSize: '12px'
+                            }}
+                            onClick={() => handleDeleteImage(idx)}
+                          >
+                            &times;
+                          </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div id="contenedorTabla" className="my-3">
             <h4>Datos de la Medición</h4>
             <TablaMedicion 
               filas={filas} 
               onFilaChange={handleFilaChange} 
-              onSeleccionChange={handleSeleccionChange}
-              seleccionados={seleccionados}
+              onFilaDelete={handleFilaDelete}
             />
             
             <div className="mt-3 no-print-pdf">
               <button className="btn btn-primary me-2" onClick={agregarFila}>Agregar Fila</button>
-              <button className="btn btn-danger me-2" onClick={eliminarFilasSeleccionadas} disabled={seleccionados.length === 0}>Eliminar Seleccionados</button>
-              <button className="btn btn-success me-2" onClick={guardarComoPDF}>Exportar a PDF</button>
-              <button className="btn btn-info" onClick={guardarEnFirebase}>Guardar en Firebase</button>
+              <button className="btn btn-secondary me-2" onClick={handlePrintPreview} disabled={imagenesCargando}>
+                {imagenesCargando ? 'Cargando...' : 'Vista Previa Impresión'}
+              </button>
+              <button className="btn btn-info" onClick={guardarEnFirebase}>Guardar</button>
             </div>
           </div>
 

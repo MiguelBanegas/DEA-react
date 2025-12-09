@@ -13,6 +13,7 @@ th[data-tooltip] {
   cursor: help;
 }
 
+/* Base Tooltip Style */
 th[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
@@ -20,12 +21,30 @@ th[data-tooltip]:hover::after {
   color: #fff;
   padding: 8px;
   border-radius: 4px;
-  font-size: 15px;
+  font-size: 11px;
   top: 100%;
-  /* left: 0; */
-  right: 0;
-  white-space: nowrap;
+  white-space: normal;
   z-index: 10;
+  width: 800px;
+}
+
+/* Default/Left Alignment */
+th[data-tooltip]:hover::after,
+th[data-tooltip-align="left"]:hover::after {
+  left: 0;
+  right: auto;
+}
+
+/* Right Alignment */
+th[data-tooltip-align="right"]:hover::after {
+  right: 0;
+  left: auto;
+}
+
+/* Center Alignment */
+th[data-tooltip-align="center"]:hover::after {
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .oculto-espacio {
@@ -324,70 +343,41 @@ table {
 }
 
 /* Anchos de columna para la tabla principal en pantalla */
-/* Fila 1 de encabezados */
-#medicionTabla thead tr:first-child th:nth-child(1) {
-  width: 1% !important;
-  white-space: nowrap;
+#medicionTabla thead tr:first-child th:nth-child(1) { /* 22 N° Toma */
+  width: 4%;
 }
-
-/* Sel - mínimo */
-#medicionTabla thead tr:first-child th:nth-child(2) {
-  width: 5%;
+#medicionTabla thead tr:first-child th:nth-child(2) { /* 23 Sector */
+  width: 12%;
 }
-
-/* 22 N° Toma */
-#medicionTabla thead tr:first-child th:nth-child(3) {
-  width: 8%;
-}
-
-/* 23 Sector */
-#medicionTabla thead tr:first-child th:nth-child(4) {
+#medicionTabla thead tr:first-child th:nth-child(3) { /* 24 Desc */
   width: 15%;
 }
-
-/* 24 Desc */
-#medicionTabla thead tr:first-child th:nth-child(5) {
+#medicionTabla thead tr:first-child th:nth-child(4) { /* 25 Uso */
   width: 17%;
 }
-
-/* 25 Uso */
-#medicionTabla thead tr:first-child th:nth-child(6) {
+#medicionTabla thead tr:first-child th:nth-child(5) { /* 26 Esquema */
   width: 8%;
 }
-
-/* 26 Esquema */
-#medicionTabla thead tr:first-child th:nth-child(9) {
+#medicionTabla thead tr:first-child th:nth-child(8) { /* 31 Disp */
   width: 7%;
 }
-
-/* 31 Disp */
-#medicionTabla thead tr:first-child th:nth-child(10) {
+#medicionTabla thead tr:first-child th:nth-child(9) { /* 32 Desc */
   width: 7%;
 }
-
-/* 32 Desc */
 
 /* Fila 2 de encabezados (Columnas anidadas) */
-#medicionTabla thead tr:nth-child(2) th:nth-child(1) {
+#medicionTabla thead tr:nth-child(2) th:nth-child(1) { /* 27 Valor */
   width: 6%;
 }
-
-/* 27 Valor */
-#medicionTabla thead tr:nth-child(2) th:nth-child(2) {
+#medicionTabla thead tr:nth-child(2) th:nth-child(2) { /* 28 Cumple */
   width: 6%;
 }
-
-/* 28 Cumple */
-#medicionTabla thead tr:nth-child(2) th:nth-child(3) {
+#medicionTabla thead tr:nth-child(2) th:nth-child(3) { /* 29 Cont */
   width: 8%;
 }
-
-/* 29 Cont */
-#medicionTabla thead tr:nth-child(2) th:nth-child(4) {
+#medicionTabla thead tr:nth-child(2) th:nth-child(4) { /* 30 Cap */
   width: 8%;
 }
-
-/* 30 Cap */
 
 
 
