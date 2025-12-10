@@ -14,6 +14,7 @@ export default function VerificacionPrint() {
     const storedFilas = localStorage.getItem("verificacionFilas");
     const storedImgs = localStorage.getItem("verificacionImagenes");
     const id = localStorage.getItem("verificacionId");
+    const originalTitle = document.title;
 
     if (storedData) {
       const parsedData = JSON.parse(storedData);
@@ -27,6 +28,18 @@ export default function VerificacionPrint() {
     if (storedImgs) {
       setImagenes(JSON.parse(storedImgs));
     }
+
+    // Disparar la impresión automáticamente después de un breve retraso
+    // para asegurar que el contenido se haya renderizado.
+    const timer = setTimeout(() => {
+      window.print();
+    }, 500);
+
+    // Función de limpieza
+    return () => {
+      document.title = originalTitle;
+      clearTimeout(timer);
+    };
   }, []);
 
   if (!data) {
@@ -44,12 +57,14 @@ export default function VerificacionPrint() {
   return (
     <>
       <div className="print-actions no-print">
-        <button className="btn-imprimir" onClick={() => window.history.back()}>
-          Volver
-        </button>
-        <button className="btn-imprimir" onClick={() => window.print()}>
-          Imprimir
-        </button>
+        <div className="d-flex flex-column gap-2">
+          <button className="btn btn-secondary" onClick={() => window.history.back()}>
+            Volver
+          </button>
+          <button className="btn btn-primary" onClick={() => window.print()}>
+            Imprimir
+          </button>
+        </div>
       </div>
 
       <div className="print-container">

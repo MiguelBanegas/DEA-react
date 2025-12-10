@@ -1,41 +1,53 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./MedicionPuestaATierraPrint.css";
 
 export default function MedicionPuestaATierraPrint() {
   const [data, setData] = useState(null);
   const [imagenes, setImagenes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const stored = localStorage.getItem("medicionFormData");
-    const imgs = localStorage.getItem("imagenesPAT");
-    const id = localStorage.getItem("idInformePAT");
+    // Leer todos los datos necesarios desde localStorage
+    const storedData = localStorage.getItem("medicionFormData");
+    const storedImgs = localStorage.getItem("imagenesPAT");
+    const reportId = localStorage.getItem("idInformePAT");
 
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      parsed.idInformePAT = id || "SIN-ID";
-      setData(parsed);
+    if (storedData) {
+      const parsedData = JSON.parse(storedData);
+      parsedData.idInformePAT = reportId || "SIN-ID";
+      setData(parsedData);
     }
 
-    if (imgs) {
-      const parsedImgs = JSON.parse(imgs);
+    if (storedImgs) {
+      const parsedImgs = JSON.parse(storedImgs);
       setImagenes(parsedImgs);
     }
 
-    // Cambiar el título del documento para que lo use la ventana de impresión
+    setIsLoading(false); // Finaliza la carga
+
+    // Configurar título de la página y disparar la impresión
     const originalTitle = document.title;
-    if (id) {
-      document.title = `Informe PAT - ID: ${id}`;
+    if (reportId) {
+      document.title = `Informe PAT - ID: ${reportId}`;
     }
 
-    // Restaurar el título original cuando el componente se desmonte
-    return () => { document.title = originalTitle; };
+    // Disparar la impresión automáticamente después de un breve retraso
+    // para asegurar que todo el contenido y las imágenes se hayan renderizado.
+    const timer = setTimeout(() => {
+      window.print();
+    }, 500);
 
-  }, []);
+    // Función de limpieza que se ejecuta cuando el componente se desmonta
+    return () => {
+      document.title = originalTitle;
+      clearTimeout(timer);
+    };
+  }, []); // El array de dependencias vacío asegura que este efecto se ejecute solo una vez
 
-  if (!data) return <div>Cargando datos...</div>;
-
-  // Separar observaciones por si son largas
-  const obsLargas = data.observaciones && data.observaciones.length > 350;
+  if (isLoading) return <div>Cargando datos del informe...</div>;
+  if (!data) return <div>No se encontraron datos para generar el informe. Por favor, vuelva y genere el informe nuevamente.</div>;
 
   const hayImagenes = imagenes && imagenes.length > 0;
 
@@ -48,31 +60,21 @@ export default function MedicionPuestaATierraPrint() {
   return (
     <>
     <div className="print-actions no-print">
-      <button 
-          className="btn-imprimir"
-          onClick={() => window.history.back()}>
-          Volver
-      </button>
-      <button 
-        onClick={() => {
-          // Nos aseguramos de que el título esté actualizado antes de imprimir
-          const id = localStorage.getItem("idInformePAT");
-          if (id) {
-            document.title = `Informe PAT - ID: ${id}`;
-          }
-          // Un pequeño retardo ayuda al navegador a procesar el cambio de título
-          setTimeout(() => window.print(), 50);
-        }} 
-        className="btn-imprimir">
-        Imprimir
-      </button>
+      <div className="d-flex flex-column gap-2">
+        <button className="btn btn-secondary" onClick={() => navigate(-1)}>
+          <i className="bi bi-arrow-left me-1"></i> Volver
+        </button>
+        <button className="btn btn-primary" onClick={() => window.print()}>
+          <i className="bi bi-printer me-1"></i> Imprimir
+        </button>
+      </div>
     </div>
 
     
     <div className="print-container" data-id={data.idInformePAT}>
 
-      {/* ====================== PÁGINA 1 ====================== */}
-      <div className={`print-page ${obsLargas ? 'break-after' : ''}`}>
+      {/* ====================== CONTENIDO UNIFICADO ====================== */}
+      <div className="print-page">
         <div className="header-print">
           <img src="/img/logo5.jpeg" alt="Logo" className="logo-print" />
           <div>
@@ -130,7 +132,7 @@ export default function MedicionPuestaATierraPrint() {
           </div>
         </div>
 
-        {/* METODOLOGÍA Y OBSERVACIONES */}
+        {/* METODOLOGÍA */}
         <div className="section-wrapper">
           <h2 className="section-title">Metodología</h2>
           <div className="section-box">
@@ -138,47 +140,30 @@ export default function MedicionPuestaATierraPrint() {
           </div>
         </div>
 
-        {!obsLargas && (
-          <div className="section-wrapper">
-            <h2 className="section-title">Observaciones</h2>
-            <div className="section-box">
-              <p>{data.observaciones}</p>
-            </div>
+        {/* OBSERVACIONES */}
+        <div className="section-wrapper">
+          <h2 className="section-title">Observaciones</h2>
+          <div className="section-box">
+            <p>{data.observaciones}</p>
           </div>
-        )}
-        {!obsLargas && !hayImagenes && <FirmaSection />}
-      </div>
-
-      {/* ====================== PÁGINA 2 (OBSERVACIONES LARGAS) ====================== */}
-      {obsLargas && (
-        <div className="print-page break-after">
-          <div className="section-wrapper">
-            <h2 className="section-title">Observaciones</h2>
-            <div className="section-box">
-              <p>{data.observaciones}</p>
-            </div>
-          </div>
-          {!hayImagenes && <FirmaSection />}
         </div>
-      )}
-
-      {/* ====================== PÁGINA DE IMÁGENES ====================== */}
-      {hayImagenes && (
-        <div className="print-page">
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div className="section-wrapper">
+        
+        {/* DOCUMENTACIÓN ADJUNTA */}
+        {hayImagenes && (
+          <div className="section-wrapper">
               <h2 className="section-title">Documentación Adjunta</h2>
               <div className="imagenes-grid">
                 {imagenes.map((img, i) => (
                   <img key={i} src={img} alt={`Foto ${i}`} className="img-print" />
                 ))}
               </div>
-            </div>
-            <FirmaSection />
           </div>
-        </div>
-      )}
+        )}
 
+        {/* FIRMA */}
+        <FirmaSection />
+
+      </div>
     </div>
     </>
   );

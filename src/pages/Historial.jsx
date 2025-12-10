@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import { usePlanillas } from '../hooks/usePlanillas';
 import toast from 'react-hot-toast';
 import { confirmar } from '../utils/confirmationToast';
@@ -93,7 +92,6 @@ const Historial = () => {
 
   return (
     <>
-      <Navbar />
       <div className="container py-5">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2>Historial de Informes</h2>

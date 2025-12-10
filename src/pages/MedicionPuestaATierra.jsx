@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import html2pdf from "html2pdf.js";
 import imageCompression from "browser-image-compression";
-import Navbar from "../components/Navbar";
 import { usePlanillas } from "../hooks/usePlanillas";
 import toast from 'react-hot-toast';
 import { confirmar } from '../utils/confirmationToast';
@@ -66,19 +65,38 @@ const MedicionPuestaATierra = () => {
   const [deletedFiles, setDeletedFiles] = useState([]);
 
   const imagenMapaRef = useRef(null);
+  const nuevoModalRef = useRef(null);
+  const nuevoModalInstanceRef = useRef(null);
   const { saveOrUpdateLocalPlanilla } = usePlanillas();
 
+  // EFECTO PARA MANEJAR EL MODAL DE "NUEVO INFORME" CON BOOTSTRAP JS
+  useEffect(() => {
+    if (nuevoModalRef.current) {
+      nuevoModalInstanceRef.current = new window.bootstrap.Modal(nuevoModalRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    const modalInstance = nuevoModalInstanceRef.current;
+    if (modalInstance) {
+      if (showNuevoModal) {
+        modalInstance.show();
+      } else {
+        modalInstance.hide();
+      }
+    }
+  }, [showNuevoModal]);
+
   // ================================
-  // 1) CARGA INICIAL SEGÚN SI ES NUEVO O DESDE HISTORIAL
+  // 1) CARGA INICIAL CENTRALIZADA
   // ================================
   useEffect(() => {
-    // Si viene desde historial
+    // CASO 1: Viene desde la página de historial con datos para cargar.
     if (location.state && location.state.datosCargados) {
       const datos = location.state.datosCargados;
 
       if (location.state.localId) {
         setIdInforme(location.state.localId);
-        localStorage.setItem("idInformePAT", location.state.localId);
       }
       
       const updated = { ...formData };
@@ -91,11 +109,8 @@ const MedicionPuestaATierra = () => {
 
       setFormData(updated);
 
-      
-      
-      // CARGAR IMÁGENES EXISTENTES
-      const imagenesDesdeEstado = location.state.imagenes || []; // De `informe.files`
-      const urlsDesdeMeta = datos.images || []; // De `informe.images` (ahora dentro de datosCargados)
+      const imagenesDesdeEstado = location.state.imagenes || [];
+      const urlsDesdeMeta = datos.images || [];
 
       const procesarFiles = async (files) => {
         setImagenesCargando(true);
@@ -106,11 +121,8 @@ const MedicionPuestaATierra = () => {
         }));
         const processed = await Promise.all(promises);
         setImagenesAdjuntas(processed);
-
         const mapImage = processed.find(img => img.file && img.file.name === 'mapa_ubicacion.png');
-        if (mapImage) {
-          setMapaUrl(mapImage.preview);
-        }
+        if (mapImage) setMapaUrl(mapImage.preview);
         setImagenesCargando(false);
       };
 
@@ -118,17 +130,12 @@ const MedicionPuestaATierra = () => {
         let mapUrl = null;
         const mapped = urlObjects.map(imgObj => {
           const url = imgObj.url;
-          const isMap = (imgObj.originalname === 'mapa_ubicacion.png') || 
-                        (typeof url === 'string' && (url.includes('mapa_ubicacion') || url.includes('uploads/mapa_')));
-          if (isMap) {
-            mapUrl = url;
-          }
+          const isMap = (imgObj.originalname === 'mapa_ubicacion.png') || (typeof url === 'string' && (url.includes('mapa_ubicacion') || url.includes('uploads/mapa_')));
+          if (isMap) mapUrl = url;
           return { file: null, preview: url };
         });
         setImagenesAdjuntas(mapped);
-        if (mapUrl) {
-          setMapaUrl(mapUrl);
-        }
+        if (mapUrl) setMapaUrl(mapUrl);
       };
 
       if (imagenesDesdeEstado.length > 0) {
@@ -141,13 +148,37 @@ const MedicionPuestaATierra = () => {
         setUbicacion({ lat: datos.latitud, lon: datos.longitud });
       }
 
-      window.history.replaceState({}, document.title);
       return;
     }
 
-    // Si no viene desde historial, es un informe nuevo.
-    // Limpiamos todo y generamos un ID temporal para asegurar un estado limpio.
-    limpiarFormulario(true); // true para generar un nuevo ID temporal
+    // CASO 2: No viene de historial, pero hay datos en localStorage (ej. al volver de la pág de impresión).
+    const datosGuardados = localStorage.getItem('medicionFormData');
+    const idGuardado = localStorage.getItem('idInformePAT');
+    const imagenesGuardadas = localStorage.getItem('imagenesPAT');
+
+    if (datosGuardados) {
+      setFormData(JSON.parse(datosGuardados));
+      if (idGuardado) {
+        setIdInforme(idGuardado);
+      }
+      if (imagenesGuardadas) {
+        try {
+          const urls = JSON.parse(imagenesGuardadas);
+          if (Array.isArray(urls)) {
+            setImagenesAdjuntas(urls.map(url => ({ file: null, preview: url })));
+            // Re-establecer la imagen del mapa si existe
+            const mapUrl = urls.find(url => typeof url === 'string' && url.includes('mapa_ubicacion'));
+            if(mapUrl) setMapaUrl(mapUrl);
+          }
+        } catch (e) {
+          console.error("Error al parsear imágenes de localStorage:", e);
+        }
+      }
+      return; // Importante: termina la ejecución aquí para no limpiar.
+    }
+
+    // CASO 3: Es un informe completamente nuevo (sin state y sin localStorage).
+    limpiarFormulario(true); // Genera un ID temporal nuevo.
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
@@ -595,8 +626,6 @@ const MedicionPuestaATierra = () => {
 
 return (
     <>
-      <Navbar />
-
       <div className="container-fluid py-4 px-5">
         <div id="exportPDF" className="bg-white p-4">
 
@@ -980,7 +1009,7 @@ return (
                       />
                     </div>
 
-                    <div className="col-md-6">
+                    <div className="col-12">
                       <label className="form-label small mb-0">Metodología</label>
                       <textarea
                         name="metodologia"
@@ -1028,11 +1057,27 @@ return (
                       </select>
                     </div>
 
-                    {/* BOTONES MAPA + IMAGEN */}
+                    {/* BOTON IMAGEN */}
                     <div className="col-md-9 no-print-pdf">
-                      <div className="d-flex flex-column gap-3">
-                        
                         <div>
+                          <label htmlFor="upload-input" className="btn btn-outline-primary btn-sm">
+                            <i className="bi bi-paperclip me-1"></i> Adjuntar Archivo(s)
+                          </label>
+                          <input
+                            id="upload-input"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="d-none"
+                            onChange={handleImageUpload}
+                          />
+                        </div>
+                    </div>
+                  </div>
+
+                  {/* BOTONES MAPA */}
+                  <div className="row g-2 mt-2 no-print-pdf">
+                        <div className="col-md-12">
                           <label className="form-label small mb-1">Ubicación</label>
                           <div className="d-flex gap-2">
                             <button
@@ -1053,24 +1098,6 @@ return (
                             </button>
                           </div>
                         </div>
-
-                        <div>
-                          <label htmlFor="upload-input" className="btn btn-outline-primary btn-sm">
-                            <i className="bi bi-paperclip me-1"></i> Adjuntar Archivo(s)
-                          </label>
-                          <input
-                            id="upload-input"
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="d-none"
-                            onChange={handleImageUpload}
-                          />
-                        </div>
-
-                      </div>
-                    </div>
-
                   </div>
 
                   {/* PREVIEW MAPA */}
@@ -1251,8 +1278,7 @@ return (
       </div>
 
       {/* Modal para confirmar la creación de un nuevo informe */}
-      {showNuevoModal && (
-        <div className="modal fade show" style={{ display: "block", background: "rgba(0,0,0,0.4)" }}>
+      <div className="modal fade" ref={nuevoModalRef} tabIndex="-1">
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
@@ -1277,7 +1303,6 @@ return (
             </div>
           </div>
         </div>
-      )}
 
     </>
   );

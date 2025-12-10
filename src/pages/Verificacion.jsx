@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import imageCompression from "browser-image-compression";
 import toast from 'react-hot-toast';
-import { confirmar } from '../utils/confirmationToast';
-import Navbar from "../components/Navbar";
 import TablaMedicion from "../components/TablaMedicion";
 import { usePlanillas } from "../hooks/usePlanillas";
 import "./Verificacion.css";
@@ -261,8 +259,8 @@ const Verificacion = () => {
       toast.success(`${validResults.length} imágen(es) adjuntada(s).`, { id: 'compressing' });
     };
   
-    const handleDeleteImage = async (index) => {
-        if (!await confirmar("¿Borrar imagen?", "Esta imagen se quitará del informe al guardar.")) return;
+    const handleDeleteImage = (index) => {
+        if (!window.confirm("¿Borrar imagen?\nEsta imagen se quitará del informe al guardar.")) return;
         
         setImagenesAdjuntas(prev => {
             const newImgs = [...prev];
@@ -386,7 +384,7 @@ const Verificacion = () => {
     const guardarEnFirebase = async () => {    if (!validarCamposObligatorios()) {
       return;
     }
-    if (!await confirmar('¿Desea guardar el informe en la base de datos?')) return;
+    if (!window.confirm('¿Desea guardar el informe en la base de datos?')) return;
 
     try {
       const newFiles = imagenesAdjuntas.filter(i => i.file).map(i => i.file);
@@ -426,7 +424,6 @@ const Verificacion = () => {
 
   return (
     <>
-      <Navbar />
       {tooltip.visible && (
         <div style={{ 
             position: 'fixed', 

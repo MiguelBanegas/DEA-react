@@ -21,9 +21,6 @@
     margin: 0;
     border: none;
   }
-  .break-after {
-    page-break-after: always;
-  }
 }
 
 /* --- Estilos Generales (para vista previa en pantalla) --- */
@@ -37,14 +34,15 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  padding: 20px 0;
+  gap: 10px;
+  padding: 10px 0; /* Reducido el padding superior e inferior */
+  text-transform: uppercase;
 }
 
 .print-page {
   background: white;
   width: 210mm;
-  padding: 15mm;
+  padding: 5mm;
   box-sizing: border-box;
   position: relative;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -52,45 +50,29 @@ body {
   flex-direction: column;
 }
 
+
+
+
 /* --- Botones de Acción (Volver, Imprimir) --- */
 .print-actions {
   position: fixed;
-  top: 20px;
-  left: 20px;
-  display: flex;
-  gap: 10px;
-  z-index: 100;
-}
-
-.btn-imprimir {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 5px;
-  background-color: #0d6efd; /* Azul Bootstrap */
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  transition: background-color 0.2s;
-}
-.btn-imprimir:hover {
-  background-color: #0b5ed7;
-}
-.btn-imprimir:first-of-type {
-  background-color: #6c757d; /* Gris Bootstrap */
-}
-.btn-imprimir:first-of-type:hover {
-  background-color: #5c636a;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1050;
+  background-color: rgba(248, 249, 250, 0.9);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* --- Encabezado del Informe --- */
 .header-print {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 0px;
   border-bottom: 2px solid #dee2e6;
   padding-bottom: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 0px;
 }
 
 .logo-print {
@@ -116,7 +98,7 @@ body {
 .section-wrapper {
   border: 1px solid #dee2e6;
   border-radius: 8px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   overflow: hidden; /* Para que el fondo del título no se salga */
   page-break-inside: avoid;
 }
@@ -124,25 +106,25 @@ body {
 .section-title {
   font-size: 0.9rem;
   font-weight: 600;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background-color: #f8f9fa; /* Gris muy claro */
   margin: 0;
   border-bottom: 1px solid #dee2e6;
 }
 
 .section-box {
-  padding: 12px;
+  padding: 8px 12px;
   font-size: 0.85rem;
 }
 
 .section-box p {
-  margin: 0 0 6px 0;
+  margin: 0 0 2px 0;
 }
 
 .section-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px 15px;
+  gap: 2px 15px;
 }
 
 .full-width {

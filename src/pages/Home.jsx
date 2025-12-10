@@ -1,70 +1,101 @@
-import React from 'react'
-import Navbar from '../components/Navbar'
+import React from 'react';
+import './Home.css'; 
 
-export default function Home(){
+export default function Home() {
   return (
-    <>
-      <Navbar />
-      <div className="container py-4">
-        {/* <div className="text-center mb-4"> */}
-        {/*   <img src="../public/img/logo5.jpeg" alt="Logo DEA" className="img-fluid" style={{maxWidth:160}} /> */}
-        {/* </div> */}
-
-        <h1 className="h3 text-center mb-3">DEA Soluciones - Verificaciones Eléctricas</h1>
-      <p className="lead text-center">Somos una consultora especializada en verificaciones eléctricas en la República Argentina, brindando servicios profesionales para garantizar la seguridad y el cumplimiento normativo en instalaciones eléctricas.</p>
-
-      <h2 className="text-center my-4">Nuestros Servicios</h2>
-
-      <div className="row align-items-center my-4">
-        <div className="col-md-4 text-center">
-          <img src="/img/electVerif2.jfif" className="img-fluid rounded shadow" alt="Imagen de servicios eléctricos" />
+    <div className="home-container">
+      {/* Carrusel de Imágenes */}
+      <div id="carouselExampleCaptions" className="carousel slide" data-bs-ride="carousel">
+        <div className="carousel-indicators">
+          <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="0" className="active" aria-current="true" aria-label="Slide 1"></button>
+          <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="1" aria-label="Slide 2"></button>
+          <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button>
         </div>
-        <div className="col-md-8">
-          <ul>
-            <li>Auditoría de Instalaciones Eléctricas.</li>
-            <li>Sistema de Protección contra el Rayo (Pararrayos).</li>
-            <li>Sistemas de Puesta a Tierra.</li>
-            <li>RES 900/15 SRT.</li>
-            <li>RES 84/12 de SRT.</li>
-            <li>Proyectos Eléctricos.</li>
-            <li>Dirección Técnica.</li>
-            <li>Consultoría.</li>
-            <li>Capacitaciones.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="row align-items-center my-4">
-        <div className="col-md-8">
-          <div className="d-grid gap-3">
-            <a href="/pages/verificacion.html" className="btn btn-primary btn-lg">Auditoría de Instalación Eléctrica</a>
-            <a href="/pages/medicion_puesta_a_tierra.html" className="btn btn-secondary btn-lg">Res 900/15 Superintendencia de Riesgos del Trabajo</a>
+        <div className="carousel-inner">
+          <div className="carousel-item active" style={{ backgroundImage: "url('/img/electVerif2.jpeg')" }}>
+            <div className="carousel-caption d-none d-md-block">
+              <h3>Auditorías de Instalaciones Eléctricas</h3>
+              <p>Garantizamos la seguridad y el cumplimiento normativo de sus instalaciones.</p>
+            </div>
+          </div>
+          <div className="carousel-item" style={{ backgroundImage: "url('/img/electVerif2.jfif')" }}>
+            <div className="carousel-caption d-none d-md-block">
+              <h3>Mediciones de Puesta a Tierra</h3>
+              <p>Servicios profesionales para sistemas de protección según RES 900/15 SRT.</p>
+            </div>
+          </div>
+          <div className="carousel-item" style={{ backgroundImage: "url('/img/logo5.jpeg')" }}>
+            <div className="carousel-caption d-none d-md-block">
+              <h3>DEA Soluciones Integrales</h3>
+              <p>Su aliado estratégico en seguridad eléctrica industrial.</p>
+            </div>
           </div>
         </div>
-        <div className="col-md-4 text-center mt-3 mt-md-0">
-          <img src="/img/electVerif2.jpeg" className="img-fluid rounded shadow" alt="Imagen servicios" />
+        <button className="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
+          <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span className="visually-hidden">Previous</span>
+        </button>
+        <button className="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
+          <span className="carousel-control-next-icon" aria-hidden="true"></span>
+          <span className="visually-hidden">Next</span>
+        </button>
+      </div>
+
+      {/* Sección de bienvenida */}
+      <div className="container text-center my-5">
+        <h1 className="display-4">Bienvenido a DEA Soluciones</h1>
+        <p className="lead">
+          Especialistas en seguridad eléctrica para la industria. Ofrecemos servicios de auditorías, mediciones de puesta a tierra y verificaciones de instalaciones para garantizar el cumplimiento normativo y la máxima seguridad.
+        </p>
+      </div>
+      
+      {/* Sección de Servicios */}
+      <div className="container my-5">
+        <h2 className="text-center mb-4">Nuestros Servicios</h2>
+        <div className="row">
+          <div className="col-md-6 mb-4">
+            <div className="card h-100 shadow-sm text-center">
+              <div className="card-body">
+                <i className="bi bi-shield-check feature-icon mb-3"></i>
+                <h5 className="card-title">Protocolo de Puesta a Tierra</h5>
+                <p className="card-text">Realizamos mediciones y emitimos el protocolo correspondiente según la Resolución 900/15 de la SRT, asegurando la protección de sus trabajadores y equipos.</p>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-6 mb-4">
+            <div className="card h-100 shadow-sm text-center">
+              <div className="card-body">
+                <i className="bi bi-card-checklist feature-icon mb-3"></i>
+                <h5 className="card-title">Verificación de Instalaciones</h5>
+                <p className="card-text">Auditamos sus instalaciones eléctricas para verificar que cumplan con la normativa vigente, identificando riesgos y recomendando mejoras.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <hr />
-      <h2 className="text-center my-4">Sobre Nosotros</h2>
-      <div className="mb-4">
-        <p>Somos un equipo de jóvenes profesionales especialistas en seguridad eléctrica en el segmento de la industria.</p>
-        <p>Iniciamos de manera unipersonal brindando servicios de electricidad domiciliaria y comercial. Transitamos la pandemia con firmeza, profundizando conocimientos a través de capacitaciones específicas, adquirimos nuevas competencias, incorporamos nuevas herramientas e instrumental de calidad lo que le permitió a nuestro proyecto sumar valor agregado, incrementando nuestros servicios para brindar soluciones integrales a nuestros clientes.</p>
-      </div>
-
-      <h2 className="text-center my-4">Contáctanos</h2>
-      <div className="text-center mb-4">
-        <a href="https://www.facebook.com/deasoluciones" className="text-decoration-none me-3 fs-2" target="_blank" rel="noreferrer"><i className="bi bi-facebook"/></a>
-        <a href="https://www.instagram.com/dea_soluciones/" className="text-decoration-none me-3 fs-2" target="_blank" rel="noreferrer"><i className="bi bi-instagram"/></a>
-        <a href="https://www.linkedin.com/in/diego-aguilar-82a751225/" className="text-decoration-none me-3 fs-2" target="_blank" rel="noreferrer"><i className="bi bi-linkedin"/></a>
-        <a href="https://wa.me/+5493813201466" className="text-decoration-none me-3 fs-2" target="_blank" rel="noreferrer"><i className="bi bi-whatsapp"/></a>
-      </div>
-
-      <footer className="text-center mt-4">
-        <p>&copy; 2024 DEA Soluciones. Todos los derechos reservados.</p>
+      {/* Footer */}
+      <footer className="bg-light text-center text-lg-start mt-auto">
+        <div className="container p-4">
+          <div className="row">
+            <div className="col-lg-6 col-md-12 mb-4 mb-md-0">
+              <h5 className="text-uppercase">DEA Soluciones</h5>
+              <p>
+                Somos un equipo de jóvenes profesionales especialistas en seguridad eléctrica en el segmento de la industria, comprometidos con la calidad y la seguridad.
+              </p>
+            </div>
+            <div className="col-lg-6 col-md-12 mb-4 mb-md-0 text-center">
+              <h5 className="text-uppercase">Contacto</h5>
+              <a href="https://wa.me/+5493813201466" className="text-dark me-3 fs-2" target="_blank" rel="noreferrer"><i className="bi bi-whatsapp"></i></a>
+              <a href="https://www.instagram.com/dea_soluciones/" className="text-dark me-3 fs-2" target="_blank" rel="noreferrer"><i className="bi bi-instagram"></i></a>
+              <a href="https://www.linkedin.com/in/diego-aguilar-82a751225/" className="text-dark me-3 fs-2" target="_blank" rel="noreferrer"><i className="bi bi-linkedin"></i></a>
+            </div>
+          </div>
+        </div>
+        <div className="text-center p-3" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
+          &copy; {new Date().getFullYear()} DEA Soluciones. Todos los derechos reservados.
+        </div>
       </footer>
     </div>
-    </>
-  )
+  );
 }
