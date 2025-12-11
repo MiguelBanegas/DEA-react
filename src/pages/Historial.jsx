@@ -34,6 +34,14 @@ const Historial = () => {
 
   useEffect(() => {
     cargarInformes();
+
+    // Actualizar al enfocar la ventana (ej. volver de otra pestaña o app)
+    const handleFocus = () => {
+      cargarInformes();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [cargarInformes]);
 
   const handleSync = async () => {

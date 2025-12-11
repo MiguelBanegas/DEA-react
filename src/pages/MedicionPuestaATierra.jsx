@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import html2pdf from "html2pdf.js";
@@ -24,6 +24,8 @@ const MedicionPuestaATierra = () => {
   // Esto evita usar un ID de localStorage de un informe anterior por error.
   const [idInforme, setIdInforme] = useState(null);
   const [showNuevoModal, setShowNuevoModal] = useState(false);
+  const [remoteId, setRemoteId] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const [formData, setFormData] = useState({
     razonSocial: "",
@@ -67,6 +69,7 @@ const MedicionPuestaATierra = () => {
   const imagenMapaRef = useRef(null);
   const nuevoModalRef = useRef(null);
   const nuevoModalInstanceRef = useRef(null);
+  const mapaModalRef = useRef(null);
   const { saveOrUpdateLocalPlanilla } = usePlanillas();
 
   // EFECTO PARA MANEJAR EL MODAL DE "NUEVO INFORME" CON BOOTSTRAP JS
@@ -93,10 +96,20 @@ const MedicionPuestaATierra = () => {
   useEffect(() => {
     // CASO 1: Viene desde la página de historial con datos para cargar.
     if (location.state && location.state.datosCargados) {
-      const datos = location.state.datosCargados;
+      // Verificar si hay datos locales más recientes (ej. volviendo de imprimir)
+      const storageId = localStorage.getItem('idInformePAT');
+      const incomingId = location.state.localId;
+      const hayDatosLocales = localStorage.getItem('medicionFormData');
+
+      // Si los IDs coinciden y hay datos locales, preferimos localStorage (saltamos este bloque)
+      if (!storageId || !incomingId || String(storageId) !== String(incomingId) || !hayDatosLocales) {
+        const datos = location.state.datosCargados;
 
       if (location.state.localId) {
         setIdInforme(location.state.localId);
+      }
+      if (location.state.remoteId) {
+        setRemoteId(location.state.remoteId);
       }
       
       const updated = { ...formData };
@@ -121,21 +134,15 @@ const MedicionPuestaATierra = () => {
         }));
         const processed = await Promise.all(promises);
         setImagenesAdjuntas(processed);
-        const mapImage = processed.find(img => img.file && img.file.name === 'mapa_ubicacion.png');
-        if (mapImage) setMapaUrl(mapImage.preview);
         setImagenesCargando(false);
       };
 
       const procesarUrls = (urlObjects) => {
-        let mapUrl = null;
         const mapped = urlObjects.map(imgObj => {
           const url = imgObj.url;
-          const isMap = (imgObj.originalname === 'mapa_ubicacion.png') || (typeof url === 'string' && (url.includes('mapa_ubicacion') || url.includes('uploads/mapa_')));
-          if (isMap) mapUrl = url;
           return { file: null, preview: url };
         });
         setImagenesAdjuntas(mapped);
-        if (mapUrl) setMapaUrl(mapUrl);
       };
 
       if (imagenesDesdeEstado.length > 0) {
@@ -148,13 +155,16 @@ const MedicionPuestaATierra = () => {
         setUbicacion({ lat: datos.latitud, lon: datos.longitud });
       }
 
+      setIsInitialized(true);
       return;
+      }
     }
 
     // CASO 2: No viene de historial, pero hay datos en localStorage (ej. al volver de la pág de impresión).
     const datosGuardados = localStorage.getItem('medicionFormData');
     const idGuardado = localStorage.getItem('idInformePAT');
     const imagenesGuardadas = localStorage.getItem('imagenesPAT');
+    const mapaGuardado = localStorage.getItem('mapaUrlPAT');
 
     if (datosGuardados) {
       setFormData(JSON.parse(datosGuardados));
@@ -166,19 +176,21 @@ const MedicionPuestaATierra = () => {
           const urls = JSON.parse(imagenesGuardadas);
           if (Array.isArray(urls)) {
             setImagenesAdjuntas(urls.map(url => ({ file: null, preview: url })));
-            // Re-establecer la imagen del mapa si existe
-            const mapUrl = urls.find(url => typeof url === 'string' && url.includes('mapa_ubicacion'));
-            if(mapUrl) setMapaUrl(mapUrl);
           }
         } catch (e) {
           console.error("Error al parsear imágenes de localStorage:", e);
         }
       }
+      if (mapaGuardado) {
+        setMapaUrl(mapaGuardado);
+      }
+      setIsInitialized(true);
       return; // Importante: termina la ejecución aquí para no limpiar.
     }
 
     // CASO 3: Es un informe completamente nuevo (sin state y sin localStorage).
     limpiarFormulario(true); // Genera un ID temporal nuevo.
+    setIsInitialized(true);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
@@ -187,11 +199,18 @@ const MedicionPuestaATierra = () => {
   // 2) GUARDADO AUTOMÁTICO LOCAL
   // ================================
   useEffect(() => {
+    if (!isInitialized) return;
+
     localStorage.setItem("medicionFormData", JSON.stringify(formData));
     if (idInforme) {
       localStorage.setItem("idInformePAT", idInforme);
     }
-  }, [formData, idInforme]);
+    if (mapaUrl) {
+      localStorage.setItem("mapaUrlPAT", mapaUrl);
+    } else {
+      localStorage.removeItem("mapaUrlPAT");
+    }
+  }, [formData, idInforme, mapaUrl, isInitialized]);
 
   // ================================
   // HANDLERS
@@ -254,7 +273,7 @@ const MedicionPuestaATierra = () => {
           
           // AGREGAR A LISTA DE BORRADO FÍSICO (Solo si viene del backend 'uploads/')
           if (deletedUrl && deletedUrl.includes('uploads/')) {
-              const filename = deletedUrl.split('/').pop();
+              const filename = deletedUrl.split('/').pop().split('?')[0];
               if (filename) {
                   setDeletedFiles(curr => [...curr, filename]);
               }
@@ -277,8 +296,19 @@ const MedicionPuestaATierra = () => {
         // FETCH REAL IMAGE URL FROM JSON
         fetch(`${API_URL}/mapa-static?lat=${lat}&lon=${lon}`)
             .then(res => res.json())
-            .then(data => {
-                if (data.imageUrl) setMapaUrl(data.imageUrl);
+            .then(async (data) => {
+                if (data.imageUrl) {
+                  try {
+                    const resp = await fetch(data.imageUrl);
+                    const blob = await resp.blob();
+                    const reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    reader.onloadend = () => setMapaUrl(reader.result);
+                  } catch (e) {
+                    console.error("Error guardando mapa temporal:", e);
+                    setMapaUrl(data.imageUrl);
+                  }
+                }
             })
             .catch(err => toast.error("Error generando mapa"));
       },
@@ -289,26 +319,38 @@ const MedicionPuestaATierra = () => {
   // ================================
   // INIT MAPA MANUAL
   // ================================
-  useEffect(() => {
-    window.initMap = initMap;
-    return () => (window.initMap = undefined);
-  }, []);
-
-  const initMap = () => {
+  const initMap = useCallback(async () => {
     try {
       const mapaEl = document.getElementById("mapaInteractivo");
-      if (!mapaEl || !window.google) return;
+      if (!mapaEl || !window.google) {
+        toast.error("La API de Google Maps no está disponible.");
+        return;
+      }
+
+      // Advanced Markers require the 'marker' library
+      const { AdvancedMarkerElement } = await window.google.maps.importLibrary("marker");
 
       const map = new window.google.maps.Map(mapaEl, {
-        center: { lat: -34.60, lng: -58.38 },
-        zoom: 8,
+        center: ubicacion.lat && ubicacion.lon ? { lat: Number(ubicacion.lat), lng: Number(ubicacion.lon) } : { lat: -34.60, lng: -58.38 },
+        zoom: ubicacion.lat && ubicacion.lon ? 15 : 8,
+        // Advanced Markers require a map ID. For production, you should create one in Google Cloud.
+        mapId: 'DEMO_MAP_ID' 
       });
 
       let marcador = null;
+      
+      if (ubicacion.lat && ubicacion.lon) {
+          marcador = new AdvancedMarkerElement({ 
+              position: { lat: Number(ubicacion.lat), lng: Number(ubicacion.lon) }, 
+              map 
+          });
+      }
 
-      window.google.maps.event.addListener(map, "click", (e) => {
-        if (marcador) marcador.setMap(null);
-        marcador = new window.google.maps.Marker({ position: e.latLng, map });
+      map.addListener("click", (e) => {
+        if (marcador) {
+            marcador.map = null; // Hide previous marker
+        }
+        marcador = new AdvancedMarkerElement({ position: e.latLng, map });
       });
 
       const btn = document.getElementById("confirmarUbicacionBtn");
@@ -319,28 +361,68 @@ const MedicionPuestaATierra = () => {
         newBtn.addEventListener("click", () => {
           if (!marcador) return toast.error("Seleccione un punto");
 
-          const lat = marcador.getPosition().lat().toFixed(6);
-          const lon = marcador.getPosition().lng().toFixed(6);
+          const lat = marcador.position.lat.toFixed(6);
+          const lon = marcador.position.lng.toFixed(6);
 
-          setUbicacion({ lat, lon });
-          
-          // FETCH REAL IMAGE URL
-          fetch(`${API_URL}/mapa-static?lat=${lat}&lon=${lon}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.imageUrl) setMapaUrl(data.imageUrl);
-            })
-            .catch(err => console.error("Error generando mapa manual:", err));
-
-          const modalEl = document.getElementById("modalMapa");
+          const modalEl = mapaModalRef.current;
           const modal = window.bootstrap.Modal.getInstance(modalEl);
+
+          // Quitar el foco del botón para evitar problemas de accesibilidad
+          newBtn.blur();
+
+          const onModalHidden = () => {
+              setUbicacion({ lat, lon });
+
+              fetch(`${API_URL}/mapa-static?lat=${lat}&lon=${lon}`)
+                  .then(res => res.json())
+                  .then(async (data) => {
+                      if (data.imageUrl) {
+                        try {
+                          const resp = await fetch(data.imageUrl);
+                          const blob = await resp.blob();
+                          const reader = new FileReader();
+                          reader.readAsDataURL(blob);
+                          reader.onloadend = () => setMapaUrl(reader.result);
+                        } catch (e) {
+                          console.error("Error guardando mapa manual temporal:", e);
+                          setMapaUrl(data.imageUrl);
+                        }
+                      }
+                  })
+                  .catch(err => console.error("Error generando mapa manual:", err));
+              
+              // Forzar limpieza de modal por si Bootstrap no lo hace correctamente
+              const backdrop = document.querySelector('.modal-backdrop');
+              if (backdrop) backdrop.remove();
+              document.body.classList.remove('modal-open');
+              document.body.style.overflow = 'auto';
+          };
+
+          // Add the listener for the 'hidden' event, to run only once
+          modalEl.addEventListener('hidden.bs.modal', onModalHidden, { once: true });
+
+          // Hide the modal, the state update will happen once it's fully hidden
           modal?.hide();
         });
       }
     } catch (err) {
       console.error("initMap error:", err);
+      toast.error("Error al inicializar el mapa.");
     }
-  };
+  }, [API_URL, ubicacion]);
+
+  useEffect(() => {
+    const modalEl = mapaModalRef.current;
+    if (!modalEl) return;
+
+    const handleShow = () => initMap();
+
+    modalEl.addEventListener('show.bs.modal', handleShow);
+
+    return () => {
+      modalEl.removeEventListener('show.bs.modal', handleShow);
+    };
+  }, [initMap]);
 
   // ================================
   // EXPORTAR PDF
@@ -486,7 +568,8 @@ const MedicionPuestaATierra = () => {
 
       // INTENTAR PERSISTIR EL MAPA
       // Unificado: Si el mapa es nuevo para este informe, lo descargamos y lo tratamos como un archivo nuevo.
-      const mapIsAlreadySaved = existingUrls.includes(mapaUrl);
+      // Verificamos si el mapa actual ya está en la lista de adjuntos (ya sea como URL remota o como archivo local)
+      const mapIsAlreadySaved = imagenesAdjuntas.some(img => img.preview === mapaUrl);
       
       if (mapaUrl && !mapIsAlreadySaved) {
         try {
@@ -516,27 +599,43 @@ const MedicionPuestaATierra = () => {
         images: existingUrls 
       };
 
-      // Detectar si tenemos un ID real de servidor para ACTUALIZAR en vez de CREAR
-      let targetRemoteId = null;
-      if (idInforme && !idInforme.startsWith("TEMP-ID") && !idInforme.startsWith("PAT-")) {
-        targetRemoteId = idInforme;
-      }
-
       // Guardar y sincronizar (enviamos meta, files y opcionalmente el ID remoto para update)
-      const result = await saveOrUpdateLocalPlanilla(meta, newFiles, idInforme, targetRemoteId);
+      // `idInforme` es el ID local (para Dexie), `remoteId` es el ID remoto (para Firebase)
+      const result = await saveOrUpdateLocalPlanilla(meta, newFiles, idInforme, remoteId);
 
       // Verificamos si obtuvimos un ID remoto (guardado exitoso en servidor)
       if (result.remoteId) {
-        // ACTUALIZAMOS EL ID CON EL REAL DE LA BD
-        setIdInforme(result.remoteId);
-        localStorage.setItem("idInformePAT", result.remoteId);
+        // ACTUALIZAMOS LOS IDs CON LOS REALES DE LA BD.
+        // Es crucial que `idInforme` siga siendo el ID local para futuras ediciones.
+        if (result.localId) {
+          setIdInforme(result.localId);
+          localStorage.setItem("idInformePAT", result.localId);
+        }
+        // Actualizamos el ID remoto por si era un informe nuevo que ahora ya tiene ID en el servidor.
+        setRemoteId(result.remoteId);
         
         // ACTUALIZACIÓN DE IMÁGENES AL INSTANTE (incluyendo mapa nuevo)
         // result.planilla viene del hook modificado
         if (result.planilla && result.planilla.images) {
-            const nuevasImgs = result.planilla.images.map(url => ({ file: null, preview: url }));
+            // Filtramos las imágenes que están en la cola de borrado para que no reaparezcan
+            // si el backend devuelve la lista vieja o combinada.
+            
+            // Normalizamos la lista por si el backend devuelve objetos en lugar de strings
+            const normalizedImages = result.planilla.images.map(img => {
+                if (typeof img === 'string') return img;
+                if (img && typeof img === 'object' && img.url) return img.url;
+                return null;
+            }).filter(Boolean);
+
+            const imagenesFiltradas = normalizedImages.filter(url => {
+                const fname = url.split('/').pop();
+                return !deletedFiles.includes(fname);
+            });
+
+            const nuevasImgs = imagenesFiltradas.map(url => ({ file: null, preview: url }));
             setImagenesAdjuntas(nuevasImgs);
-            localStorage.setItem("imagenesPAT", JSON.stringify(result.planilla.images));
+            localStorage.setItem("imagenesPAT", JSON.stringify(imagenesFiltradas));
+            setMapaUrl(null);
         }
 
         // PROCESAR BORRADO FÍSICO DE ARCHIVOS HUÉRFANOS
@@ -546,13 +645,21 @@ const MedicionPuestaATierra = () => {
                     await deleteFile(filename);
                     console.log("Archivo eliminado físicamente:", filename);
                 } catch (err) {
-                    console.error("Error borrando archivo físico:", filename, err);
+                    // Si el error es 404, significa que ya no existe, lo ignoramos.
+                    const is404 = (err.message && (err.message.includes('404') || err.message.includes('Not Found'))) || 
+                                  (err.response && err.response.status === 404);
+
+                    if (is404) {
+                        console.warn(`El archivo ${filename} ya había sido eliminado (404).`);
+                    } else {
+                        console.error("Error borrando archivo físico:", filename, err);
+                    }
                 }
             }
             setDeletedFiles([]); // Limpiar cola tras éxito
         }
 
-        toast.success(`Informe guardado EXITOSAMENTE.\nID: ${result.remoteId}`, { duration: 4000 });
+        toast.success(`Informe guardado y sincronizado exitosamente.`, { duration: 4000 });
       } else {
         // ERROR O SIN CONEXIÓN
         console.warn("Guardado solo localmente:", result.error);
@@ -612,6 +719,7 @@ const MedicionPuestaATierra = () => {
 
     localStorage.removeItem("medicionFormData");
     localStorage.removeItem("idInformePAT");
+    localStorage.removeItem("mapaUrlPAT");
 
     // Si se indica, se genera un ID nuevo para el próximo informe.
     // Si no, se limpia el ID actual.
@@ -620,6 +728,7 @@ const MedicionPuestaATierra = () => {
       setIdInforme(nuevoId);
     } else {
       setIdInforme(null);
+      setRemoteId(null);
     }
   };
   
@@ -1056,23 +1165,6 @@ return (
                         <option value="no">No</option>
                       </select>
                     </div>
-
-                    {/* BOTON IMAGEN */}
-                    <div className="col-md-9 no-print-pdf">
-                        <div>
-                          <label htmlFor="upload-input" className="btn btn-outline-primary btn-sm">
-                            <i className="bi bi-paperclip me-1"></i> Adjuntar Archivo(s)
-                          </label>
-                          <input
-                            id="upload-input"
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="d-none"
-                            onChange={handleImageUpload}
-                          />
-                        </div>
-                    </div>
                   </div>
 
                   {/* BOTONES MAPA */}
@@ -1120,6 +1212,23 @@ return (
                       </div>
                     </div>
                   )}
+
+                  {/* BOTON IMAGEN */}
+                  <div className="row g-2 mt-2 no-print-pdf">
+                    <div className="col-12">
+                      <label htmlFor="upload-input" className="btn btn-outline-primary btn-sm">
+                        <i className="bi bi-paperclip me-1"></i> Adjuntar Archivo(s)
+                      </label>
+                      <input
+                        id="upload-input"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="d-none"
+                        onChange={handleImageUpload}
+                      />
+                    </div>
+                  </div>
 
                   {/* PREVIEW IMÁGENES */}
                   {imagenesAdjuntas.length > 0 && (
@@ -1232,6 +1341,7 @@ return (
       <div
         className="modal fade"
         id="modalMapa"
+        ref={mapaModalRef}
         tabIndex="-1"
         aria-hidden="true"
       >
