@@ -1,0 +1,5 @@
+[33m61cfb1e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m nuevo buid
+[33mcb8cd15[m Lógica de Guardado: Se corrigió la duplicación de informes al editar desde el historial. Ahora se manejan correctamente el localId y remoteId para actualizar en lugar de crear nuevos registros.Imágenes y Mapas:Solucionado el error donde imágenes borradas reaparecían tras guardar.Normalización de datos de imágenes para evitar errores de tipo split.El mapa de ubicación se mueve a la lista de adjuntos al guardar y limpia la vista previa para evitar duplicados visuales.Manejo silencioso de errores 404 al intentar borrar archivos físicos que ya no existen.Interfaz (UI):Reubicación del botón Adjuntar Archivo(s) debajo de los controles de ubicación.Reordenamiento de la vista previa del mapa.Historial: Agregada actualización automática de la lista al volver a hacer foco en la ventana.
+[33m6ad6ed7[m creo el buid de react
+[33m4227af4[m feat(forms): Mejoras en impresión y corrección de errores
+[33mf87d947[m feat(verificacion): Mejoras en formulario de verificación y CUIT
