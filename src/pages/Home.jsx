@@ -24,7 +24,7 @@ export default function Home() {
               <p>Servicios profesionales para sistemas de protección según RES 900/15 SRT.</p>
             </div>
           </div>
-          <div className="carousel-item" style={{ backgroundImage: "url('/img/logo5.jpeg')" }}>
+          <div className="carousel-item" style={{ backgroundImage: "url('/img/electVerif2.jpeg')" }}>
             <div className="carousel-caption d-none d-md-block">
               <h3>DEA Soluciones Integrales</h3>
               <p>Su aliado estratégico en seguridad eléctrica industrial.</p>
