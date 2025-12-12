@@ -5,26 +5,29 @@ export default function Home() {
   return (
     <div className="home-container">
       {/* Carrusel de ImágeneS */}
-      <div id="carouselExampleCaptions" className="carousel slide" data-bs-ride="carousel">
+      <div id="carouselExampleCaptions" className="carousel slide" data-bs-ride="carousel" style={{ maxWidth: '1000px', margin: '80px auto 0' }}>
         <div className="carousel-indicators">
           <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="0" className="active" aria-current="true" aria-label="Slide 1"></button>
           <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="1" aria-label="Slide 2"></button>
           <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button>
         </div>
         <div className="carousel-inner">
-          <div className="carousel-item active" style={{ backgroundImage: "url('/img/electVerif2.jpeg')" }}>
+          <div className="carousel-item active">
+            <img src="/img/electr2.jpg" className="d-block w-100" alt="Auditorías" style={{ height: '600px', objectFit: 'cover' }} />
             <div className="carousel-caption d-none d-md-block">
               <h3>Auditorías de Instalaciones Eléctricas</h3>
               <p>Garantizamos la seguridad y el cumplimiento normativo de sus instalaciones.</p>
             </div>
           </div>
-          <div className="carousel-item" style={{ backgroundImage: "url('/img/electVerif2.jfif')" }}>
+          <div className="carousel-item">
+            <img src="/img/electr1.jpg" className="d-block w-100" alt="Mediciones" style={{ height: '600px', objectFit: 'cover' }} />
             <div className="carousel-caption d-none d-md-block">
               <h3>Mediciones de Puesta a Tierra</h3>
               <p>Servicios profesionales para sistemas de protección según RES 900/15 SRT.</p>
             </div>
           </div>
-          <div className="carousel-item" style={{ backgroundImage: "url('/img/electVerif2.jpeg')" }}>
+          <div className="carousel-item">
+            <img src="/img/electr3.jpg" className="d-block w-100" alt="Soluciones" style={{ height: '600px', objectFit: 'cover' }} />
             <div className="carousel-caption d-none d-md-block">
               <h3>DEA Soluciones Integrales</h3>
               <p>Su aliado estratégico en seguridad eléctrica industrial.</p>
